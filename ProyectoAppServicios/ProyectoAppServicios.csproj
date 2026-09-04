@@ -11,10 +11,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Controllers\" />
     <Folder Include="AppServicios.Application\" />
+    <Folder Include="AppServicios.Domain\Interfaces\" />
     <Folder Include="AppServicios.Presentation\" />
-    <Folder Include="AppServicios.Domain\" />
     <Folder Include="AppServicios.Infrastructure\" />
   </ItemGroup>
 
