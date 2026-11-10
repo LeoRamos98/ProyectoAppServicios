@@ -35,9 +35,9 @@ namespace AppServicios.Domain.Entities
         public void ActualizarPresentacion(
         string fotoPerfil,
         string comentarioPresentacion)
-            {
-                FotoPerfil = fotoPerfil;
-                ComentarioPresentacion = comentarioPresentacion;
-            }
+        {
+            FotoPerfil = fotoPerfil;
+            ComentarioPresentacion = comentarioPresentacion;
+        }
     }
 }
