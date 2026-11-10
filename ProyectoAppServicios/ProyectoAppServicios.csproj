@@ -7,14 +7,27 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.9" />
+    <Compile Remove="AppServicios.Application\**" />
+    <Compile Remove="AppServicios.Infrastructure\**" />
+    <Compile Remove="AppServicios.Presentation\**" />
+    <Content Remove="AppServicios.Application\**" />
+    <Content Remove="AppServicios.Infrastructure\**" />
+    <Content Remove="AppServicios.Presentation\**" />
+    <EmbeddedResource Remove="AppServicios.Application\**" />
+    <EmbeddedResource Remove="AppServicios.Infrastructure\**" />
+    <EmbeddedResource Remove="AppServicios.Presentation\**" />
+    <None Remove="AppServicios.Application\**" />
+    <None Remove="AppServicios.Infrastructure\**" />
+    <None Remove="AppServicios.Presentation\**" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="AppServicios.Application\" />
-    <Folder Include="AppServicios.Domain\Interfaces\" />
-    <Folder Include="AppServicios.Presentation\" />
-    <Folder Include="AppServicios.Infrastructure\" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.14" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AppServicios.Application\AppServicios.Application.csproj" />
+    <ProjectReference Include="..\AppServicios.Infrastructure\AppServicios.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

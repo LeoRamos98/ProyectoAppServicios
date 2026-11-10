@@ -1,3 +1,6 @@
 <Solution>
+  <Project Path="AppServicios.Application/AppServicios.Application.csproj" Id="71537f4c-4617-487b-b86b-54f938a67eae" />
+  <Project Path="AppServicios.Domain/AppServicios.Domain.csproj" Id="c10af472-d97d-4b6e-aea4-b6d7406e0ff4" />
+  <Project Path="AppServicios.Infrastructure/AppServicios.Infrastructure.csproj" Id="c8c4d4dc-8eaf-4f5e-97bc-e3f59d97edeb" />
   <Project Path="ProyectoAppServicios/ProyectoAppServicios.csproj" />
 </Solution>
