@@ -3,6 +3,7 @@ using AppServicios.Application.Services;
 using AppServicios.Domain.Interfaces;
 using AppServicios.Infrastructure.Repositories;
 using AppServicios.Infrastructure.Data;
+using AppServicios.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -34,6 +35,9 @@ builder.Services.AddScoped<IEncargoService, EncargoService>();
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<IMensajeService, MensajeService>();
 builder.Services.AddScoped<ICalificacionService, CalificacionService>();
+
+// Seguridad
+builder.Services.AddSingleton<IHasherContrasenia, HasherContrasenia>();
 
 var app = builder.Build();
 

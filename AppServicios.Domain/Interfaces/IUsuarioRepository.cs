@@ -1,6 +1,25 @@
-﻿namespace AppServicios.Domain.Interfaces
+﻿using AppServicios.Domain.Entities;
+
+namespace AppServicios.Domain.Interfaces
 {
     public interface IUsuarioRepository
     {
+        Task<List<Usuario>> ObtenerTodosAsync(
+            CancellationToken cancellationToken = default);
+
+        Task<Usuario?> ObtenerPorIdAsync(
+            int id,
+            CancellationToken cancellationToken = default);
+
+        Task<bool> ExisteEmailAsync(
+            string email,
+            CancellationToken cancellationToken = default);
+
+        Task AgregarAsync(
+            Usuario usuario,
+            CancellationToken cancellationToken = default);
+
+        Task GuardarCambiosAsync(
+            CancellationToken cancellationToken = default);
     }
 }
