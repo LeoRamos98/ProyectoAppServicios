@@ -1,6 +1,38 @@
 @ProyectoAppServicios_HostAddress = http://localhost:5298
 
-GET {{ProyectoAppServicios_HostAddress}}/weatherforecast/
+### Listar usuarios
+GET {{ProyectoAppServicios_HostAddress}}/api/usuarios
 Accept: application/json
+
+### Obtener usuario por id
+GET {{ProyectoAppServicios_HostAddress}}/api/usuarios/1
+Accept: application/json
+
+### Registrar usuario
+POST {{ProyectoAppServicios_HostAddress}}/api/usuarios
+Content-Type: application/json
+
+{
+  "nombre": "Juan",
+  "apellido": "Pérez",
+  "email": "juan.perez@example.com",
+  "contrasenia": "Prueba123!",
+  "telefono": "3465123456",
+  "direccion": "Belgrano 1234, Firmat"
+}
+
+### Actualizar perfil
+PUT {{ProyectoAppServicios_HostAddress}}/api/usuarios/1
+Content-Type: application/json
+
+{
+  "nombre": "Juan Carlos",
+  "apellido": "Pérez",
+  "telefono": "3465654321",
+  "direccion": "San Martín 500, Firmat"
+}
+
+### Baja lógica
+DELETE {{ProyectoAppServicios_HostAddress}}/api/usuarios/1
 
 ###
