@@ -4,6 +4,7 @@ using AppServicios.Domain.Interfaces;
 using AppServicios.Infrastructure.Repositories;
 using AppServicios.Infrastructure.Data;
 using AppServicios.Infrastructure.Security;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -38,6 +39,9 @@ builder.Services.AddScoped<ICalificacionService, CalificacionService>();
 
 // Seguridad
 builder.Services.AddSingleton<IHasherContrasenia, HasherContrasenia>();
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer();
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
@@ -48,6 +52,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

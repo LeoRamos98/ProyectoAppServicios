@@ -229,6 +229,12 @@ namespace AppServicios.Infrastructure.Migrations
                     b.Property<int>("IdUsuario")
                         .HasColumnType("int");
 
+                    b.Property<double?>("Latitud")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("Longitud")
+                        .HasColumnType("float");
+
                     b.Property<string>("TipoServicio")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
