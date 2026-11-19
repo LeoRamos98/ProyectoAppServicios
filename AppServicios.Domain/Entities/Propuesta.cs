@@ -35,6 +35,21 @@ namespace AppServicios.Domain.Entities
             FotoPropuesta = fotoPropuesta ?? string.Empty;
         }
 
+        public void Actualizar(
+            string tipoServicio, string descripcion, string ubicacion,
+            double latitud, double longitud, DateTime fechaSolicitada, string? foto)
+        {
+            ConfirmarUbicacion(ubicacion, latitud, longitud);
+            TipoServicio = tipoServicio.Trim();
+            Descripcion = descripcion.Trim();
+            FechaSolicitada = fechaSolicitada;
+            FotoPropuesta = foto?.Trim() ?? string.Empty;
+        }
+
+        public void Adjudicar() => Estado = EstadoPropuestaEnum.Adjudicada;
+
+        public void Cancelar() => Estado = EstadoPropuestaEnum.Cancelada;
+
         public void ConfirmarUbicacion(string ubicacion, double latitud, double longitud)
         {
             if (string.IsNullOrWhiteSpace(ubicacion))

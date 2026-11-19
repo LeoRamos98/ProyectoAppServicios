@@ -1,5 +1,4 @@
-﻿using System.Security.Claims;
-using AppServicios.Application.DTOs.Propuestas;
+﻿using AppServicios.Application.DTOs.Propuestas;
 using AppServicios.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +8,7 @@ namespace ProyectoAppServicios.Controllers
     [ApiController]
     [Authorize]
     [Route("api/propuestas")]
-    public class PropuestasController : ControllerBase
+    public class PropuestasController : ControladorAutenticado
     {
         private readonly IPropuestaService _propuestaService;
 
@@ -88,10 +87,19 @@ namespace ProyectoAppServicios.Controllers
             return Ok(propuestas);
         }
 
-        private bool IntentarObtenerIdUsuario(out int idUsuario)
+        [HttpPut("{id:int}")]
+        public Task<ActionResult<PropuestaResponse>> Actualizar(
+            int id, [FromBody] CrearPropuestaRequest request, CancellationToken cancellationToken)
         {
-            var identificador = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            return int.TryParse(identificador, out idUsuario) && idUsuario > 0;
+            return EjecutarAsync(usuario => _propuestaService.ActualizarAsync(
+                usuario, id, request, cancellationToken));
+        }
+
+        [HttpDelete("{id:int}")]
+        public Task<ActionResult<PropuestaResponse>> Cancelar(int id, CancellationToken cancellationToken)
+        {
+            return EjecutarAsync(usuario => _propuestaService.CancelarAsync(
+                usuario, id, cancellationToken));
         }
     }
 }

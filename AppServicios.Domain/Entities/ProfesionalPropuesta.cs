@@ -18,6 +18,16 @@ namespace AppServicios.Domain.Entities
         public EstadoPresupuestoEnum Estado { get; private set; }
             = EstadoPresupuestoEnum.Pendiente;
 
+        public void RegistrarSeleccionDelUsuario(bool seleccionada) => AprobadoUsuario = seleccionada;
+
+        public void ConfirmarAcuerdo()
+        {
+            AprobadoProfesional = true;
+            Estado = EstadoPresupuestoEnum.Aceptado;
+        }
+
+        public void Cancelar() => Estado = EstadoPresupuestoEnum.Cancelado;
+
         public ProfesionalPropuesta(
             int idProfesional,
             int idPropuesta,

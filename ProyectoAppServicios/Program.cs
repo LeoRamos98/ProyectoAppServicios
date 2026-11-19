@@ -19,6 +19,7 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 // Repositorios
+builder.Services.AddScoped<IUnidadDeTrabajo, UnidadDeTrabajo>();
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IProfesionalRepository, ProfesionalRepository>();
 builder.Services.AddScoped<IPropuestaRepository, PropuestaRepository>();
