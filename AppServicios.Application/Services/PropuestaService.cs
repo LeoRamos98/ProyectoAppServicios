@@ -2,6 +2,7 @@
 using AppServicios.Application.DTOs.Propuestas;
 using AppServicios.Application.Interfaces;
 using AppServicios.Domain.Entities;
+using AppServicios.Domain.Enums;
 using AppServicios.Domain.Interfaces;
 
 namespace AppServicios.Application.Services
@@ -24,13 +25,18 @@ namespace AppServicios.Application.Services
             CrearPropuestaRequest request,
             CancellationToken cancellationToken = default)
         {
-            var usuario = await _usuarioRepository.ObtenerPorIdAsync(idUsuarioAutenticado, cancellationToken);
+            var usuario = await _usuarioRepository.ObtenerPorIdAsync(
+                idUsuarioAutenticado, cancellationToken);
+
             if (usuario is null || !usuario.Activo)
             {
                 return null;
             }
 
-            Validator.ValidateObject(request, new ValidationContext(request), validateAllProperties: true);
+            Validator.ValidateObject(
+                request,
+                new ValidationContext(request),
+                validateAllProperties: true);
 
             var propuesta = new Propuesta(
                 usuario.Id,
@@ -40,12 +46,35 @@ namespace AppServicios.Application.Services
                 request.FechaSolicitada!.Value,
                 request.FotoPropuesta?.Trim());
 
-            propuesta.ConfirmarUbicacion(request.Ubicacion, request.Latitud!.Value, request.Longitud!.Value);
+            propuesta.ConfirmarUbicacion(
+                request.Ubicacion,
+                request.Latitud!.Value,
+                request.Longitud!.Value);
 
             await _propuestaRepository.AgregarAsync(propuesta, cancellationToken);
             await _propuestaRepository.GuardarCambiosAsync(cancellationToken);
 
             return PropuestaResponse.DesdeEntidad(propuesta);
+        }
+
+        public async Task<IReadOnlyList<PropuestaResponse>?> ObtenerActivasAsync(
+            int idUsuarioAutenticado,
+            CancellationToken cancellationToken = default)
+        {
+            var usuario = await _usuarioRepository.ObtenerPorIdAsync(
+                idUsuarioAutenticado, cancellationToken);
+
+            if (usuario is not Profesional profesional ||
+                !profesional.Activo ||
+                profesional.Estado != EstadoProfesionalEnum.Disponible)
+            {
+                return null;
+            }
+
+            var propuestas = await _propuestaRepository.ObtenerActivasAsync(
+                cancellationToken);
+
+            return propuestas.Select(PropuestaResponse.DesdeEntidad).ToList();
         }
     }
 }

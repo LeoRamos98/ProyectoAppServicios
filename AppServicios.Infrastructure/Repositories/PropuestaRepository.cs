@@ -1,6 +1,8 @@
 ﻿using AppServicios.Domain.Entities;
 using AppServicios.Domain.Interfaces;
 using AppServicios.Infrastructure.Data;
+using AppServicios.Domain.Enums;
+using Microsoft.EntityFrameworkCore;
 
 namespace AppServicios.Infrastructure.Repositories
 {
@@ -25,5 +27,15 @@ namespace AppServicios.Infrastructure.Repositories
         {
             return _context.SaveChangesAsync(cancellationToken);
         }
+        public Task<List<Propuesta>> ObtenerActivasAsync(
+            CancellationToken cancellationToken = default)
+            {
+                return _context.Propuestas
+                    .AsNoTracking()
+                    .Where(propuesta => propuesta.Estado == EstadoPropuestaEnum.Activa)
+                    .OrderBy(propuesta => propuesta.Id)
+                    .ToListAsync(cancellationToken);
+             }
     }
+
 }

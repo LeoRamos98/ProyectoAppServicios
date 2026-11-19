@@ -9,5 +9,9 @@ namespace AppServicios.Application.Interfaces
             int idUsuarioAutenticado,
             CrearPropuestaRequest request,
             CancellationToken cancellationToken = default);
+
+        Task<IReadOnlyList<PropuestaResponse>?> ObtenerActivasAsync(
+            int idUsuarioAutenticado,
+            CancellationToken cancellationToken = default);
     }
 }

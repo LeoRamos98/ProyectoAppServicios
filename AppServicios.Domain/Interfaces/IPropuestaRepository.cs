@@ -10,5 +10,8 @@ namespace AppServicios.Domain.Interfaces
 
         Task GuardarCambiosAsync(
             CancellationToken cancellationToken = default);
+
+        Task<List<Propuesta>> ObtenerActivasAsync(
+            CancellationToken cancellationToken = default);
     }
 }
