@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using AppServicios.Application.Interfaces;
 using AppServicios.Application.Services;
 using AppServicios.Domain.Interfaces;
@@ -7,6 +8,8 @@ using AppServicios.Infrastructure.Security;
 using AppServicios.Infrastructure.ServiciosExternos;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>(options =>

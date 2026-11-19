@@ -31,6 +31,15 @@ namespace AppServicios.Infrastructure.Repositories
                 .FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
         }
 
+        public Task<Usuario?> ObtenerPorEmailAsync(
+            string email,
+            CancellationToken cancellationToken = default)
+        {
+            return _context.Usuarios
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
+        }
+
         public Task<bool> ExisteEmailAsync(
             string email,
             CancellationToken cancellationToken = default)

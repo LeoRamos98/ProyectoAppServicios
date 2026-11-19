@@ -1,5 +1,31 @@
 @ProyectoAppServicios_HostAddress = http://localhost:5298
 
+# ---------------- Autenticación ----------------
+# Requiere la clave JWT configurada (una sola vez por máquina):
+#   dotnet user-secrets set "Jwt:Clave" "<clave de al menos 32 caracteres>" --project ProyectoAppServicios
+
+### Login (guarda el token en {{login.response.body.token}})
+# @name login
+POST {{ProyectoAppServicios_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "juan.perez@example.com",
+  "contrasenia": "Prueba123!"
+}
+
+### Datos del usuario autenticado
+GET {{ProyectoAppServicios_HostAddress}}/api/auth/yo
+Authorization: Bearer {{login.response.body.token}}
+Accept: application/json
+
+### Ejemplo de endpoint protegido: mis propuestas
+GET {{ProyectoAppServicios_HostAddress}}/api/propuestas/mias
+Authorization: Bearer {{login.response.body.token}}
+Accept: application/json
+
+# ---------------- Usuarios ----------------
+
 ### Listar usuarios
 GET {{ProyectoAppServicios_HostAddress}}/api/usuarios
 Accept: application/json

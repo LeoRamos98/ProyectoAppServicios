@@ -10,6 +10,9 @@ namespace AppServicios.Domain.Interfaces
         Task<Usuario?> ObtenerPorIdAsync(
             int id,
             CancellationToken cancellationToken = default);
+        Task<Usuario?> ObtenerPorEmailAsync(
+            string email,
+            CancellationToken cancellationToken = default);
 
         Task<bool> ExisteEmailAsync(
             string email,

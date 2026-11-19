@@ -26,17 +26,32 @@ namespace AppServicios.Infrastructure.Security
         public bool Verificar(string contrasenia, string hash)
         {
             var partes = hash.Split('.');
-            if (partes.Length != 3 || !int.TryParse(partes[0], out var iteraciones))
+            if (partes.Length != 3
+                || !int.TryParse(partes[0], out var iteraciones)
+                || iteraciones <= 0)
             {
                 return false;
             }
 
-            var sal = Convert.FromBase64String(partes[1]);
-            var esperado = Convert.FromBase64String(partes[2]);
-            var calculado = Rfc2898DeriveBytes.Pbkdf2(
-                contrasenia, sal, iteraciones, Algoritmo, esperado.Length);
+            try
+            {
+                var sal = Convert.FromBase64String(partes[1]);
+                var esperado = Convert.FromBase64String(partes[2]);
+                if (esperado.Length == 0)
+                {
+                    return false;
+                }
 
-            return CryptographicOperations.FixedTimeEquals(calculado, esperado);
+                var calculado = Rfc2898DeriveBytes.Pbkdf2(
+                    contrasenia, sal, iteraciones, Algoritmo, esperado.Length);
+
+                return CryptographicOperations.FixedTimeEquals(calculado, esperado);
+            }
+            catch (FormatException)
+            {
+                // Lo guardado no es un hash de esta clase (por ejemplo, texto plano).
+                return false;
+            }
         }
     }
 }
