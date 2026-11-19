@@ -1,0 +1,63 @@
+@host = http://localhost:5298
+
+# Ids que muestra datos-prueba.sql al final (con la base vacía son estos).
+@idCliente = 1
+@idProfesional = 2
+@idPresupuesto = 1
+
+# Id del encargo que devuelve el paso 1 (con la base vacía es 1).
+@idEncargo = 1
+
+### 1) Crear el encargo a partir del presupuesto aprobado  -> 201
+POST {{host}}/api/encargos
+Content-Type: application/json
+
+{ "idProfesionalPropuesta": {{idPresupuesto}} }
+
+### 2) Calificar ANTES de finalizar  -> 409 "Solo se puede calificar un encargo finalizado."
+POST {{host}}/api/encargos/{{idEncargo}}/calificacion
+Content-Type: application/json
+
+{ "idUsuario": {{idCliente}}, "puntaje": 5, "comentario": "Todavía no terminó" }
+
+### 3) El profesional inicia el encargo  -> 200, estado 1 (EnCurso)
+PUT {{host}}/api/encargos/{{idEncargo}}/iniciar
+Content-Type: application/json
+
+{ "idUsuario": {{idProfesional}} }
+
+### 4) El profesional finaliza el encargo  -> 200, estado 2 (Finalizado)
+PUT {{host}}/api/encargos/{{idEncargo}}/finalizar
+Content-Type: application/json
+
+{ "idUsuario": {{idProfesional}} }
+
+### 5) Califica alguien que no es el cliente  -> 403
+POST {{host}}/api/encargos/{{idEncargo}}/calificacion
+Content-Type: application/json
+
+{ "idUsuario": {{idProfesional}}, "puntaje": 5, "comentario": "Me califico a mí misma" }
+
+### 6) Puntaje fuera de rango  -> 400
+POST {{host}}/api/encargos/{{idEncargo}}/calificacion
+Content-Type: application/json
+
+{ "idUsuario": {{idCliente}}, "puntaje": 7 }
+
+### 7) Calificación correcta  -> 201
+POST {{host}}/api/encargos/{{idEncargo}}/calificacion
+Content-Type: application/json
+
+{ "idUsuario": {{idCliente}}, "puntaje": 5, "comentario": "Excelente trabajo, muy prolija y puntual." }
+
+### 8) Calificar de nuevo el mismo encargo  -> 409 "El encargo ya fue calificado."
+POST {{host}}/api/encargos/{{idEncargo}}/calificacion
+Content-Type: application/json
+
+{ "idUsuario": {{idCliente}}, "puntaje": 1 }
+
+### 9) Ver la calificación del encargo  -> 200
+GET {{host}}/api/encargos/{{idEncargo}}/calificacion
+
+### 10) Reputación del profesional  -> 200, promedio 5 y cantidad 1
+GET {{host}}/api/calificaciones/profesional/{{idProfesional}}
