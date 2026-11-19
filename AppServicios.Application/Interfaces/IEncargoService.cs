@@ -9,14 +9,11 @@ namespace AppServicios.Application.Interfaces
 
         Task<EncargoResponse?> ObtenerPorIdAsync(
             int id,
-            CancellationToken cancellationToken = default);
-
-        Task<IReadOnlyList<EncargoResponse>> ObtenerPorUsuarioAsync(
             int idUsuario,
             CancellationToken cancellationToken = default);
 
-        Task<IReadOnlyList<EncargoResponse>> ObtenerPorProfesionalAsync(
-            int idProfesional,
+        Task<IReadOnlyList<EncargoResponse>> ObtenerMiosAsync(
+            int idUsuario,
             CancellationToken cancellationToken = default);
 
         /// <exception cref="Exceptions.ConflictoException">
@@ -24,6 +21,7 @@ namespace AppServicios.Application.Interfaces
         /// la propuesta no está activa o ya tiene un encargo.
         /// </exception>
         Task<EncargoResponse?> CrearAsync(
+            int idUsuario,
             CrearEncargoRequest request,
             CancellationToken cancellationToken = default);
 
@@ -35,7 +33,7 @@ namespace AppServicios.Application.Interfaces
         /// </exception>
         Task<EncargoResponse?> IniciarAsync(
             int id,
-            AccionEncargoRequest request,
+            int idUsuario,
             CancellationToken cancellationToken = default);
 
         /// <exception cref="Exceptions.AccesoDenegadoException">
@@ -46,7 +44,7 @@ namespace AppServicios.Application.Interfaces
         /// </exception>
         Task<EncargoResponse?> FinalizarAsync(
             int id,
-            AccionEncargoRequest request,
+            int idUsuario,
             CancellationToken cancellationToken = default);
 
         /// <exception cref="Exceptions.AccesoDenegadoException">
@@ -57,7 +55,7 @@ namespace AppServicios.Application.Interfaces
         /// </exception>
         Task<EncargoResponse?> CancelarAsync(
             int id,
-            AccionEncargoRequest request,
+            int idUsuario,
             CancellationToken cancellationToken = default);
     }
 }

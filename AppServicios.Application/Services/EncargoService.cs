@@ -38,12 +38,41 @@ namespace AppServicios.Application.Services
 
         public async Task<EncargoResponse?> ObtenerPorIdAsync(
             int id,
+            int idUsuario,
             CancellationToken cancellationToken = default)
         {
             var encargo = await _encargoRepository
                 .ObtenerPorIdAsync(id, cancellationToken);
 
-            return encargo is null ? null : EncargoResponse.DesdeDetalle(encargo);
+            if (encargo is null)
+            {
+                return null;
+            }
+
+            if (idUsuario != encargo.IdUsuario && idUsuario != encargo.IdProfesional)
+            {
+                throw new AccesoDenegadoException(
+                    "Solo el usuario solocitante o el profesional asignado pueden ver el encargo.");
+            }
+
+            return EncargoResponse.DesdeDetalle(encargo);
+        }
+
+        public async Task<IReadOnlyList<EncargoResponse>> ObtenerMiosAsync(
+            int idUsuario,
+            CancellationToken cancellationToken = default)
+        {
+            var comoSolicitante = await _encargoRepository
+                .ObtenerPorUsuarioAsync(idUsuario, cancellationToken);
+            var comoProfesional = await _encargoRepository
+                .ObtenerPorProfesionalAsync(idUsuario, cancellationToken);
+
+            return comoSolicitante
+                .Concat(comoProfesional)
+                .DistinctBy(d => d.Encargo.Id)
+                .OrderBy(d => d.Encargo.Id)
+                .Select(EncargoResponse.DesdeDetalle)
+                .ToList();
         }
 
         public async Task<IReadOnlyList<EncargoResponse>> ObtenerPorUsuarioAsync(
@@ -67,6 +96,7 @@ namespace AppServicios.Application.Services
         }
 
         public async Task<EncargoResponse?> CrearAsync(
+            int idUsuario,
             CrearEncargoRequest request,
             CancellationToken cancellationToken = default)
         {
@@ -100,6 +130,12 @@ namespace AppServicios.Application.Services
                     "La propuesta asociada al presupuesto no existe.");
             }
 
+            if (idUsuario != propuesta.IdUsuario && idUsuario != presupuesto.IdProfesional)
+            {
+                throw new AccesoDenegadoException(
+                    "Solo el usuario solicitante o el profesional del presupuesto pueden crear el encargo.");
+            }
+
             if (propuesta.Estado != EstadoPropuestaEnum.Activa)
             {
                 throw new ConflictoException(
@@ -129,12 +165,12 @@ namespace AppServicios.Application.Services
 
         public Task<EncargoResponse?> IniciarAsync(
             int id,
-            AccionEncargoRequest request,
+            int idUsuario,
             CancellationToken cancellationToken = default)
         {
             return CambiarEstadoAsync(
                 id,
-                request.IdUsuario,
+                idUsuario,
                 soloProfesionalAsignado: true,
                 mensajeSinPermiso:
                     "Solo el profesional asignado puede iniciar el encargo.",
@@ -144,12 +180,12 @@ namespace AppServicios.Application.Services
 
         public Task<EncargoResponse?> FinalizarAsync(
             int id,
-            AccionEncargoRequest request,
+            int idUsuario,
             CancellationToken cancellationToken = default)
         {
             return CambiarEstadoAsync(
                 id,
-                request.IdUsuario,
+                idUsuario,
                 soloProfesionalAsignado: true,
                 mensajeSinPermiso:
                     "Solo el profesional asignado puede finalizar el encargo.",
@@ -159,12 +195,12 @@ namespace AppServicios.Application.Services
 
         public Task<EncargoResponse?> CancelarAsync(
             int id,
-            AccionEncargoRequest request,
+            int idUsuario,
             CancellationToken cancellationToken = default)
         {
             return CambiarEstadoAsync(
                 id,
-                request.IdUsuario,
+                idUsuario,
                 soloProfesionalAsignado: false,
                 mensajeSinPermiso:
                     "Solo el usuario solicitante o el profesional asignado " +

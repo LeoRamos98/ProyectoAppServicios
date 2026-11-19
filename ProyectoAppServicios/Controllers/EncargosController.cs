@@ -1,15 +1,15 @@
 ﻿using AppServicios.Application.DTOs.Encargos;
-using AppServicios.Application.Exceptions;
 using AppServicios.Application.Interfaces;
-using AppServicios.Infrastructure.Repositories;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ProyectoAppServicios.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/encargos")]
     [Produces("application/json")]
-    public class EncargosController : ControllerBase
+    public class EncargosController : ControladorAutenticado
     {
         private readonly IEncargoService _encargoService;
 
@@ -20,167 +20,94 @@ namespace ProyectoAppServicios.Controllers
 
         // GET api/encargos
         [HttpGet]
+        [Authorize(Roles = "Admin")]
         [ProducesResponseType<IReadOnlyList<EncargoResponse>>(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult<IReadOnlyList<EncargoResponse>>> ObtenerTodos(
             CancellationToken cancellationToken)
         {
-            var encargos = await _encargoService.ObtenerTodosAsync(cancellationToken);
-            return Ok(encargos);
+            return Ok(await _encargoService.ObtenerTodosAsync(cancellationToken));
         }
+
+        // GET api/encargos/mios Encargos donde soy solicitante o profesional
+        [HttpGet("mios")]
+        [ProducesResponseType<IReadOnlyList<EncargoResponse>>(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public Task<ActionResult<IReadOnlyList<EncargoResponse>>> ObtenerMios(
+            CancellationToken cancellationToken) =>
+            EjecutarAsync(usuario =>
+                _encargoService.ObtenerMiosAsync(usuario, cancellationToken));
 
         // GET api/encargos/5
         [HttpGet("{id:int}")]
         [ProducesResponseType<EncargoResponse>(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<EncargoResponse>> ObtenerPorId(
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+        public Task<ActionResult<EncargoResponse>> ObtenerPorId(
             int id,
-            CancellationToken cancellationToken)
-        {
-            var encargo = await _encargoService.ObtenerPorIdAsync(id, cancellationToken);
-            return encargo is null ? NotFound() : Ok(encargo);
-        }
+            CancellationToken cancellationToken) =>
+            EjecutarAsync(async usuario =>
+                await _encargoService.ObtenerPorIdAsync(id, usuario, cancellationToken)
+                    ?? throw new KeyNotFoundException("El encargo no existe."));
 
-        // GET api/encargos/usuario/5  (encargos que solicitó un usuario)
-        [HttpGet("usuario/{idUsuario:int}")]
-        [ProducesResponseType<IReadOnlyList<EncargoResponse>>(StatusCodes.Status200OK)]
-        public async Task<ActionResult<IReadOnlyList<EncargoResponse>>> ObtenerPorUsuario(
-            int idUsuario,
-            CancellationToken cancellationToken)
-        {
-            var encargos = await _encargoService
-                .ObtenerPorUsuarioAsync(idUsuario, cancellationToken);
-            return Ok(encargos);
-        }
-
-        // GET api/encargos/profesional/5  (encargos asignados a un profesional)
-        [HttpGet("profesional/{idProfesional:int}")]
-        [ProducesResponseType<IReadOnlyList<EncargoResponse>>(StatusCodes.Status200OK)]
-        public async Task<ActionResult<IReadOnlyList<EncargoResponse>>> ObtenerPorProfesional(
-            int idProfesional,
-            CancellationToken cancellationToken)
-        {
-            var encargos = await _encargoService
-                .ObtenerPorProfesionalAsync(idProfesional, cancellationToken);
-            return Ok(encargos);
-        }
-
-        // POST api/encargos  (se genera a partir de un presupuesto aprobado por ambas partes)
+        // POST api/encargos A partir de un presupuesto aprobado por ambas partes
         [HttpPost]
         [ProducesResponseType<EncargoResponse>(StatusCodes.Status201Created)]
         [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-        public async Task<ActionResult<EncargoResponse>> Crear(
+        public Task<ActionResult<EncargoResponse>> Crear(
             [FromBody] CrearEncargoRequest request,
-            CancellationToken cancellationToken)
-        {
-            try
-            {
-                var encargo = await _encargoService.CrearAsync(request, cancellationToken);
-                return encargo is null
-                    ? NotFound()
-                    : CreatedAtAction(
-                        nameof(ObtenerPorId), new { id = encargo.Id }, encargo);
-            }
-            catch (ConflictoException ex)
-            {
-                return Problem(
-                    detail: ex.Message,
-                    statusCode: StatusCodes.Status409Conflict);
-            }
-        }
+            CancellationToken cancellationToken) =>
+            EjecutarAsync(async usuario =>
+                await _encargoService.CrearAsync(usuario, request, cancellationToken)
+                    ?? throw new KeyNotFoundException("El presupuesto no existe."),
+                StatusCodes.Status201Created);
 
         // PUT api/encargos/5/iniciar
         [HttpPut("{id:int}/iniciar")]
         [ProducesResponseType<EncargoResponse>(StatusCodes.Status200OK)]
-        [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-        public async Task<ActionResult<EncargoResponse>> Iniciar(
+        public Task<ActionResult<EncargoResponse>> Iniciar(
             int id,
-            [FromBody] AccionEncargoRequest request,
-            CancellationToken cancellationToken)
-        {
-            try
-            {
-                var encargo = await _encargoService.IniciarAsync(id, request, cancellationToken);
-                return encargo is null ? NotFound() : Ok(encargo);
-            }
-            catch (AccesoDenegadoException ex)
-            {
-                return Problem(
-                    detail: ex.Message,
-                    statusCode: StatusCodes.Status403Forbidden);
-            }
-            catch (ConflictoException ex)
-            {
-                return Problem(
-                    detail: ex.Message,
-                    statusCode: StatusCodes.Status409Conflict);
-            }
-        }
+            CancellationToken cancellationToken) =>
+            EjecutarAsync(async usuario =>
+                await _encargoService.IniciarAsync(id, usuario, cancellationToken)
+                    ?? throw new KeyNotFoundException("El encargo no existe."));
 
         // PUT api/encargos/5/finalizar
         [HttpPut("{id:int}/finalizar")]
         [ProducesResponseType<EncargoResponse>(StatusCodes.Status200OK)]
-        [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-        public async Task<ActionResult<EncargoResponse>> Finalizar(
+        public Task<ActionResult<EncargoResponse>> Finalizar(
             int id,
-            [FromBody] AccionEncargoRequest request,
-            CancellationToken cancellationToken)
-        {
-            try
-            {
-                var encargo = await _encargoService.FinalizarAsync(id, request, cancellationToken);
-                return encargo is null ? NotFound() : Ok(encargo);
-            }
-            catch (AccesoDenegadoException ex)
-            {
-                return Problem(
-                    detail: ex.Message,
-                    statusCode: StatusCodes.Status403Forbidden);
-            }
-            catch (ConflictoException ex)
-            {
-                return Problem(
-                    detail: ex.Message,
-                    statusCode: StatusCodes.Status409Conflict);
-            }
-        }
+            CancellationToken cancellationToken) =>
+            EjecutarAsync(async usuario =>
+                await _encargoService.FinalizarAsync(id, usuario, cancellationToken)
+                    ?? throw new KeyNotFoundException("El encargo no existe."));
 
         // PUT api/encargos/5/cancelar
         [HttpPut("{id:int}/cancelar")]
         [ProducesResponseType<EncargoResponse>(StatusCodes.Status200OK)]
-        [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-        public async Task<ActionResult<EncargoResponse>> Cancelar(
+        public Task<ActionResult<EncargoResponse>> Cancelar(
             int id,
-            [FromBody] AccionEncargoRequest request,
-            CancellationToken cancellationToken)
-        {
-            try
-            {
-                var encargo = await _encargoService.CancelarAsync(id, request, cancellationToken);
-                return encargo is null ? NotFound() : Ok(encargo);
-            }
-            catch (AccesoDenegadoException ex)
-            {
-                return Problem(
-                    detail: ex.Message,
-                    statusCode: StatusCodes.Status403Forbidden);
-            }
-            catch (ConflictoException ex)
-            {
-                return Problem(
-                    detail: ex.Message,
-                    statusCode: StatusCodes.Status409Conflict);
-            }
-        }
+            CancellationToken cancellationToken) =>
+            EjecutarAsync(async usuario =>
+                await _encargoService.CancelarAsync(id, usuario, cancellationToken)
+                    ?? throw new KeyNotFoundException("El encargo no existe."));
     }
 }

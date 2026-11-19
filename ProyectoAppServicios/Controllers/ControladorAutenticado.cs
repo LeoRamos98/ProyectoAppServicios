@@ -27,6 +27,10 @@ public abstract class ControladorAutenticado : ControllerBase
         {
             return Forbid();
         }
+        catch (AccesoDenegadoException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status403Forbidden);
+        }
         catch (KeyNotFoundException ex)
         {
             return Problem(detail: ex.Message, statusCode: StatusCodes.Status404NotFound);
