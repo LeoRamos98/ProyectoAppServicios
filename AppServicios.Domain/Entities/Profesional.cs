@@ -14,6 +14,8 @@ namespace AppServicios.Domain.Entities
         public EstadoProfesionalEnum Estado { get; private set; }
             = EstadoProfesionalEnum.Disponible;
 
+        public void OcuparPorEncargo() => Estado = EstadoProfesionalEnum.Ocupado;
+
         public Profesional(
             string nombre,
             string apellido,

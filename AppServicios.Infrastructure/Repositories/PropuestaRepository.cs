@@ -15,6 +15,11 @@ namespace AppServicios.Infrastructure.Repositories
             _context = context;
         }
 
+        public Task<Propuesta?> ObtenerPorIdAsync(int id, CancellationToken cancellationToken)
+        {
+            return _context.Propuestas.SingleOrDefaultAsync(p => p.Id == id, cancellationToken);
+        }
+
         public async Task AgregarAsync(
             Propuesta propuesta,
             CancellationToken cancellationToken = default)

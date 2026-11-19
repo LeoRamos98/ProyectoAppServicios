@@ -4,6 +4,8 @@ namespace AppServicios.Domain.Interfaces
 {
     public interface IPropuestaRepository
     {
+        Task<Propuesta?> ObtenerPorIdAsync(int id, CancellationToken cancellationToken);
+
         Task AgregarAsync(
             Propuesta propuesta,
             CancellationToken cancellationToken = default);
