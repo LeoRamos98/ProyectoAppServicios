@@ -1,0 +1,82 @@
+name: CI de la API
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    name: Compilar y probar
+    runs-on: windows-2025
+    timeout-minutes: 20
+    env:
+      ConnectionStrings__DefaultConnection: 'Server=(localdb)\AppServiciosCI;Database=AppServiciosCI;Integrated Security=true;TrustServerCertificate=true'
+
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Instalar .NET 10
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restaurar y compilar la solución
+        run: |
+          dotnet restore ProyectoAppServicios.slnx
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet build ProyectoAppServicios.slnx -c Release --no-restore
+
+      - name: Ejecutar las pruebas de la solución
+        run: dotnet test ProyectoAppServicios.slnx -c Release --no-build
+
+      - name: Empaquetar la API
+        run: dotnet publish ProyectoAppServicios/ProyectoAppServicios.csproj -c Release --no-build -o "$env:RUNNER_TEMP/publicacion"
+
+      - name: Crear la base de prueba y aplicar las migraciones
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $true
+          $localdb = (Get-Command SqlLocalDB.exe -ErrorAction SilentlyContinue).Source
+          if (!$localdb) {
+            $localdb = Get-ChildItem "$env:ProgramFiles/Microsoft SQL Server/*/Tools/Binn/SqlLocalDB.exe" |
+              Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName
+          }
+          if (!$localdb) { throw 'No se encontró SQL Server LocalDB en el runner.' }
+          & $localdb create AppServiciosCI -s
+          dotnet tool install dotnet-ef --version 10.0.15 --tool-path "$env:RUNNER_TEMP/ef"
+          & "$env:RUNNER_TEMP/ef/dotnet-ef.exe" database update --project AppServicios.Infrastructure --startup-project ProyectoAppServicios --configuration Release --no-build
+
+      - name: Cargar los datos de prueba del proyecto
+        shell: powershell
+        run: |
+          $conexion = New-Object System.Data.SqlClient.SqlConnection $env:ConnectionStrings__DefaultConnection
+          try {
+            $conexion.Open()
+            $consulta = $conexion.CreateCommand()
+            $consulta.CommandText = Get-Content datos-prueba.sql -Raw -Encoding UTF8
+            $lector = $consulta.ExecuteReader()
+            if (!$lector.Read()) { throw 'El script SQL no devolvió los identificadores de ensayo.' }
+            "ID_CLIENTE_CI=$($lector['IdCliente'])" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+            "ID_PROFESIONAL_CI=$($lector['IdProfesional'])" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          } finally {
+            $conexion.Dispose()
+          }
+
+      - name: Probar propuestas y presupuestos por HTTP
+        run: ./.github/scripts/probar-api.ps1 -IdUsuario $env:ID_CLIENTE_CI -IdProfesional $env:ID_PROFESIONAL_CI
+
+      - name: Guardar la API compilada
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: api-compilada
+          path: ${{ runner.temp }}/publicacion/
+          if-no-files-found: error
+          retention-days: 3
