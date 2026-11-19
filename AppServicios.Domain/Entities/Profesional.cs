@@ -30,14 +30,48 @@ namespace AppServicios.Domain.Entities
             Zona = zona;
             TipoProfesional = tipoProfesional;
             NroMatricula = nroMatricula;
-
         }
+
         public void ActualizarPresentacion(
-        string fotoPerfil,
-        string comentarioPresentacion)
+            string fotoPerfil,
+            string comentarioPresentacion)
         {
             FotoPerfil = fotoPerfil;
             ComentarioPresentacion = comentarioPresentacion;
+        }
+
+        public void ActualizarDatosProfesionales(
+            string zona,
+            string tipoProfesional)
+        {
+            Zona = zona;
+            TipoProfesional = tipoProfesional;
+        }
+
+        /// <summary>
+        /// Cambia entre Disponible y Ocupado. Un profesional dado de baja
+        /// no puede cambiar su disponibilidad.
+        /// </summary>
+        public void CambiarDisponibilidad(bool disponible)
+        {
+            if (Estado == EstadoProfesionalEnum.DadoDeBaja)
+            {
+                throw new InvalidOperationException(
+                    "Un profesional dado de baja no puede cambiar su disponibilidad.");
+            }
+
+            Estado = disponible
+                ? EstadoProfesionalEnum.Disponible
+                : EstadoProfesionalEnum.Ocupado;
+        }
+
+        /// <summary>
+        /// Baja lógica: desactiva la cuenta y marca al profesional como dado de baja.
+        /// </summary>
+        public void DarDeBaja()
+        {
+            Desactivar();
+            Estado = EstadoProfesionalEnum.DadoDeBaja;
         }
     }
 }

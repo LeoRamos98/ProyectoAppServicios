@@ -36,3 +36,63 @@ Content-Type: application/json
 DELETE {{ProyectoAppServicios_HostAddress}}/api/usuarios/1
 
 ###
+# ---------------- Profesionales ----------------
+
+### Listar profesionales
+GET {{ProyectoAppServicios_HostAddress}}/api/profesionales
+Accept: application/json
+
+### Obtener profesional por id
+GET {{ProyectoAppServicios_HostAddress}}/api/profesionales/2
+Accept: application/json
+
+### Registrar profesional
+POST {{ProyectoAppServicios_HostAddress}}/api/profesionales
+Content-Type: application/json
+
+{
+  "nombre": "María",
+  "apellido": "Gómez",
+  "email": "maria.gomez@example.com",
+  "contrasenia": "Prueba123!",
+  "telefono": "3465111222",
+  "direccion": "Italia 800, Firmat",
+  "zona": "Firmat",
+  "tipoProfesional": "Electricista",
+  "nroMatricula": "ELEC-12345"
+}
+
+### Actualizar datos del profesional
+PUT {{ProyectoAppServicios_HostAddress}}/api/profesionales/2
+Content-Type: application/json
+
+{
+  "nombre": "María",
+  "apellido": "Gómez",
+  "telefono": "3465333444",
+  "direccion": "Italia 800, Firmat",
+  "zona": "Firmat y alrededores",
+  "tipoProfesional": "Electricista matriculada"
+}
+
+### Actualizar presentación
+PATCH {{ProyectoAppServicios_HostAddress}}/api/profesionales/2/presentacion
+Content-Type: application/json
+
+{
+  "fotoPerfil": "https://example.com/fotos/maria.jpg",
+  "comentarioPresentacion": "Electricista con 10 años de experiencia en instalaciones domiciliarias."
+}
+
+### Cambiar disponibilidad (true = Disponible, false = Ocupado)
+PATCH {{ProyectoAppServicios_HostAddress}}/api/profesionales/2/disponibilidad
+Content-Type: application/json
+
+{
+  "disponible": false
+}
+
+### Baja lógica del profesional
+DELETE {{ProyectoAppServicios_HostAddress}}/api/profesionales/2
+
+###
