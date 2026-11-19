@@ -60,6 +60,21 @@ try {
     if (!$disponible) { throw 'La API no respondió en el puerto de prueba.' }
 
     $null = Probar GET 'propuestas/mias' 401
+    $alta = @{
+        nombre = 'Cuenta'
+        apellido = 'Ensayo'
+        email = "ci-$([Guid]::NewGuid().ToString('N'))@example.test"
+        contrasenia = [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(24))
+        telefono = '3415550100'
+        direccion = 'Calle de prueba 100'
+    }
+    $cuenta = Probar POST 'usuarios' 201 '' $alta
+    $null = Probar POST 'auth/login' 401 '' @{ email = $alta.email; contrasenia = 'incorrecta' }
+    $login = Probar POST 'auth/login' 200 '' @{ email = $alta.email; contrasenia = $alta.contrasenia }
+    if (!$login.token) { throw 'El login respondió sin token.' }
+    $yo = Probar GET 'auth/yo' 200 $login.token
+    if ($yo.id -ne $cuenta.id) { throw 'El token identifica a otra cuenta.' }
+
     $datos = @{
         tipoServicio = 'Electricidad'
         descripcion = 'Revisión de instalación'
@@ -68,6 +83,12 @@ try {
         longitud = -61.25
         fechaSolicitada = (Get-Date).AddDays(2).ToString('yyyy-MM-dd')
     }
+    $propia = Probar POST 'propuestas' 201 $login.token $datos
+    $misPropuestas = @(Probar GET 'propuestas/mias' 200 $login.token)
+    if ($propia.idUsuario -ne $cuenta.id -or $propia.id -notin $misPropuestas.id) {
+        throw 'La cuenta autenticada debe poder crear y consultar su propia propuesta.'
+    }
+
     $propuesta = Probar POST 'propuestas' 201 $cliente $datos
     $mias = @(Probar GET 'propuestas/mias' 200 $cliente)
     $leida = $mias | Where-Object id -eq $propuesta.id

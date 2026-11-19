@@ -29,6 +29,12 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Generar la clave JWT temporal de esta ejecución
+        run: |
+          $clave = [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+          Write-Output "::add-mask::$clave"
+          "Jwt__Clave=$clave" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
       - name: Restaurar y compilar la solución
         run: |
           dotnet restore ProyectoAppServicios.slnx
@@ -70,7 +76,7 @@ jobs:
             $conexion.Dispose()
           }
 
-      - name: Probar propuestas y presupuestos por HTTP
+      - name: Probar login, propuestas y presupuestos por HTTP
         run: ./.github/scripts/probar-api.ps1 -IdUsuario $env:ID_CLIENTE_CI -IdProfesional $env:ID_PROFESIONAL_CI
 
       - name: Guardar la API compilada

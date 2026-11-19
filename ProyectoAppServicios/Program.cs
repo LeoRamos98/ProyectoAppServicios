@@ -7,6 +7,7 @@ using AppServicios.Infrastructure.Data;
 using AppServicios.Infrastructure.Security;
 using AppServicios.Infrastructure.ServiciosExternos;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -53,9 +54,46 @@ builder.Services.AddHttpClient(nameof(GoogleMapsService), cliente =>
 
 // Seguridad
 builder.Services.AddSingleton<IHasherContrasenia, HasherContrasenia>();
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer();
-builder.Services.AddAuthorization();
+builder.Services.AddScoped<IAutenticacionService, AutenticacionService>();
+builder.Services.AddSingleton<IGeneradorToken, GeneradorTokenJwt>();
+builder.Services.AddOptions<JwtOpciones>()
+    .BindConfiguration(JwtOpciones.Seccion)
+    .ValidateDataAnnotations()
+    .Validate(opciones => !string.IsNullOrWhiteSpace(opciones.Clave) && opciones.ClaveEsSuficiente(), "Jwt:Clave debe tener al menos 32 bytes.")
+    .ValidateOnStart();
+
+const string esquemaApi = "JwtAplicacion";
+var autenticacion = builder.Services.AddAuthentication(esquemaApi)
+    .AddJwtBearer(esquemaApi);
+builder.Services.AddOptions<JwtBearerOptions>(esquemaApi)
+    .Configure<IOptions<JwtOpciones>>((bearer, configuracion) =>
+    {
+        var jwt = configuracion.Value;
+        bearer.MapInboundClaims = false;
+        bearer.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = jwt.Emisor,
+            ValidateAudience = true,
+            ValidAudience = jwt.Audiencia,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(jwt.ClaveEnBytes()),
+            ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
+            NameClaimType = ClaimTypes.Name,
+            RoleClaimType = ClaimTypes.Role
+        };
+    });
+
+var politica = new AuthorizationPolicyBuilder(esquemaApi);
+if (builder.Environment.IsDevelopment())
+{
+    // dotnet user-jwts guarda su configuración en el esquema Bearer.
+    autenticacion.AddJwtBearer(JwtBearerDefaults.AuthenticationScheme);
+    politica.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme);
+}
+builder.Services.AddAuthorizationBuilder()
+    .SetDefaultPolicy(politica.RequireAuthenticatedUser().Build());
 
 var app = builder.Build();
 
