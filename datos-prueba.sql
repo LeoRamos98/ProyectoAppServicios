@@ -1,7 +1,8 @@
 -- Datos mínimos para probar encargos y calificaciones.
 -- Crea: un cliente, un profesional, una propuesta del cliente y un
 -- presupuesto del profesional aprobado por ambos.
--- Al final muestra los ids que hay que usar en pruebas-calificaciones.http.
+-- Al final muestra los ids para el ensayo local con dotnet user-jwts.
+-- El marcador ! no admite login. Las cuentas registradas por la API sí guardan su hash.
 
 SET NOCOUNT ON;
 BEGIN TRANSACTION;
@@ -10,12 +11,12 @@ DECLARE @IdCliente INT, @IdProfesional INT, @IdPropuesta INT, @IdPresupuesto INT
 
 -- Cliente (Rol 0 = Usuario)
 INSERT INTO Usuarios (Nombre, Apellido, Direccion, Email, Contrasenia, Telefono, Rol, Activo)
-VALUES ('Juan', 'Perez', 'Av. Siempre Viva 123', 'juan@test.com', '1234', '1111-1111', 0, 1);
+VALUES ('Juan', 'Perez', 'Av. Siempre Viva 123', 'juan@test.com', '!', '1111-1111', 0, 1);
 SET @IdCliente = SCOPE_IDENTITY();
 
 -- Profesional (Rol 1 = Profesional). Por la herencia TPT va en dos tablas con el mismo Id.
 INSERT INTO Usuarios (Nombre, Apellido, Direccion, Email, Contrasenia, Telefono, Rol, Activo)
-VALUES ('Maria', 'Gomez', 'Calle Falsa 456', 'maria@test.com', '1234', '2222-2222', 1, 1);
+VALUES ('Maria', 'Gomez', 'Calle Falsa 456', 'maria@test.com', '!', '2222-2222', 1, 1);
 SET @IdProfesional = SCOPE_IDENTITY();
 
 INSERT INTO Profesionales (Id, Zona, TipoProfesional, NroMatricula, FotoPerfil, ComentarioPresentacion, Estado)

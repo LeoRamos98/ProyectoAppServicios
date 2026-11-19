@@ -1,4 +1,6 @@
 ﻿using AppServicios.Domain.Entities;
+using AppServicios.Domain.Enums;
+using AppServicios.Domain.Models;
 using AppServicios.Domain.Interfaces;
 using AppServicios.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -29,6 +31,21 @@ namespace AppServicios.Infrastructure.Repositories
         {
             return _context.Profesionales
                 .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+        }
+
+        public Task<List<TrabajoFinalizado>> ObtenerTrabajosFinalizadosAsync(
+            int idProfesional, CancellationToken cancellationToken = default)
+        {
+            return (from e in _context.Encargos.AsNoTracking()
+                    join oferta in _context.Presupuestos on e.IdProfesionalPropuesta equals oferta.Id
+                    join propuesta in _context.Propuestas on e.IdPropuesta equals propuesta.Id
+                    join nota in _context.Calificaciones on e.Id equals nota.IdEncargo into notas
+                    from nota in notas.DefaultIfEmpty()
+                    where oferta.IdProfesional == idProfesional && e.Estado == EstadoEncargoEnum.Finalizado
+                    orderby e.FechaFinalizacionEncargo descending, e.Id descending
+                    select new TrabajoFinalizado(e.Id, propuesta.TipoServicio, e.FechaFinalizacionEncargo,
+                        nota == null ? null : (int?)nota.Puntaje, nota == null ? null : nota.Comentario))
+                .ToListAsync(cancellationToken);
         }
 
         public Task<bool> ExisteMatriculaAsync(

@@ -104,7 +104,10 @@ public class ProfesionalPropuestaService(
             profesional.OcuparPorEncargo();
             var encargo = new Encargo(propuesta.Id, oferta.Id, propuesta.Ubicacion);
             var idEncargo = await presupuestos.CrearEncargoConChatAsync(encargo, propuesta.IdUsuario, usuario, ct);
-            return new ConfirmacionPresupuestoResponse(PresupuestoResponse.DesdeEntidad(oferta), idEncargo);
+            return new ConfirmacionPresupuestoResponse(PresupuestoResponse.DesdeEntidad(oferta), idEncargo)
+            {
+                EncargoCreado = true
+            };
         }, ct);
 
     public Task<PresupuestoResponse> RetirarAsync(int usuario, int presupuesto, CancellationToken ct) =>

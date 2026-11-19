@@ -1,4 +1,5 @@
-﻿using AppServicios.Domain.Entities;
+﻿using AppServicios.Domain.Enums;
+using AppServicios.Domain.Entities;
 using AppServicios.Domain.Interfaces;
 using AppServicios.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +14,10 @@ namespace AppServicios.Infrastructure.Repositories
         {
             _context = context;
         }
+
+        public Task<RolEnum?> ObtenerRolActivoAsync(int id, CancellationToken cancellationToken = default) =>
+            _context.Usuarios.Where(u => u.Id == id && u.Activo)
+                .Select(u => (RolEnum?)u.Rol).SingleOrDefaultAsync(cancellationToken);
 
         public Task<List<Usuario>> ObtenerTodosAsync(
             CancellationToken cancellationToken = default)

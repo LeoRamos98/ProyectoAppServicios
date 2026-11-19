@@ -1,9 +1,12 @@
-﻿using AppServicios.Domain.Entities;
+﻿using AppServicios.Domain.Enums;
+using AppServicios.Domain.Entities;
 
 namespace AppServicios.Domain.Interfaces
 {
     public interface IUsuarioRepository
     {
+        Task<RolEnum?> ObtenerRolActivoAsync(int id, CancellationToken cancellationToken = default);
+
         Task<List<Usuario>> ObtenerTodosAsync(
             CancellationToken cancellationToken = default);
 

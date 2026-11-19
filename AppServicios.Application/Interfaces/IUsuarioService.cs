@@ -1,9 +1,12 @@
-﻿using AppServicios.Application.DTOs.Usuarios;
+﻿using AppServicios.Domain.Enums;
+using AppServicios.Application.DTOs.Usuarios;
 
 namespace AppServicios.Application.Interfaces
 {
     public interface IUsuarioService
     {
+        Task<RolEnum?> ObtenerRolActivoAsync(int id, CancellationToken cancellationToken = default);
+
         Task<IReadOnlyList<UsuarioResponse>> ObtenerTodosAsync(
             CancellationToken cancellationToken = default);
 

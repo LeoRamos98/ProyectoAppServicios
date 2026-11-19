@@ -1,11 +1,14 @@
 ﻿using AppServicios.Application.DTOs.Profesionales;
 using AppServicios.Application.Exceptions;
 using AppServicios.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ProyectoAppServicios.Autorizacion;
 
 namespace ProyectoAppServicios.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/profesionales")]
     [Produces("application/json")]
     public class ProfesionalesController : ControllerBase
@@ -40,8 +43,19 @@ namespace ProyectoAppServicios.Controllers
             return profesional is null ? NotFound() : Ok(profesional);
         }
 
+        [HttpGet("{id:int}/perfil")]
+        [ProducesResponseType<PerfilProfesionalResponse>(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<PerfilProfesionalResponse>> ObtenerPerfil(
+            int id, CancellationToken cancellationToken)
+        {
+            var perfil = await _profesionalService.ObtenerPerfilAsync(id, cancellationToken);
+            return perfil is null ? NotFound() : Ok(perfil);
+        }
+
         // POST api/profesionales  (registro)
         [HttpPost]
+        [AllowAnonymous]
         [ProducesResponseType<ProfesionalResponse>(StatusCodes.Status201Created)]
         [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
@@ -65,6 +79,7 @@ namespace ProyectoAppServicios.Controllers
 
         // PUT api/profesionales/5
         [HttpPut("{id:int}")]
+        [Authorize(Policy = nameof(AlcanceCuenta.TitularOAdministrador))]
         [ProducesResponseType<ProfesionalResponse>(StatusCodes.Status200OK)]
         [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -79,6 +94,7 @@ namespace ProyectoAppServicios.Controllers
 
         // PATCH api/profesionales/5/presentacion
         [HttpPatch("{id:int}/presentacion")]
+        [Authorize(Policy = nameof(AlcanceCuenta.TitularOAdministrador))]
         [ProducesResponseType<ProfesionalResponse>(StatusCodes.Status200OK)]
         [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -94,6 +110,7 @@ namespace ProyectoAppServicios.Controllers
 
         // PATCH api/profesionales/5/disponibilidad
         [HttpPatch("{id:int}/disponibilidad")]
+        [Authorize(Policy = nameof(AlcanceCuenta.TitularOAdministrador))]
         [ProducesResponseType<ProfesionalResponse>(StatusCodes.Status200OK)]
         [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -119,6 +136,7 @@ namespace ProyectoAppServicios.Controllers
 
         // DELETE api/profesionales/5  (baja lógica: Activo = false, Estado = DadoDeBaja)
         [HttpDelete("{id:int}")]
+        [Authorize(Policy = nameof(AlcanceCuenta.Administrador))]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DarDeBaja(

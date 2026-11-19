@@ -1,4 +1,5 @@
-﻿using AppServicios.Application.DTOs.Usuarios;
+﻿using AppServicios.Domain.Enums;
+using AppServicios.Application.DTOs.Usuarios;
 using AppServicios.Application.Exceptions;
 using AppServicios.Application.Interfaces;
 using AppServicios.Domain.Entities;
@@ -18,6 +19,9 @@ namespace AppServicios.Application.Services
             _usuarioRepository = usuarioRepository;
             _hasherContrasenia = hasherContrasenia;
         }
+
+        public Task<RolEnum?> ObtenerRolActivoAsync(int id, CancellationToken cancellationToken = default) =>
+            _usuarioRepository.ObtenerRolActivoAsync(id, cancellationToken);
 
         public async Task<IReadOnlyList<UsuarioResponse>> ObtenerTodosAsync(
             CancellationToken cancellationToken = default)
@@ -100,7 +104,10 @@ namespace AppServicios.Application.Services
                 return false;
             }
 
-            usuario.Desactivar();
+            if (usuario is Profesional profesional)
+                profesional.DarDeBaja();
+            else
+                usuario.Desactivar();
             await _usuarioRepository.GuardarCambiosAsync(cancellationToken);
 
             return true;

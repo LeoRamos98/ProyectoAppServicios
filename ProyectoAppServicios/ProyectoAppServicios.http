@@ -26,12 +26,14 @@ Accept: application/json
 
 # ---------------- Usuarios ----------------
 
-### Listar usuarios
+### Listar usuarios (administrador)
 GET {{ProyectoAppServicios_HostAddress}}/api/usuarios
+Authorization: Bearer {{login.response.body.token}}
 Accept: application/json
 
 ### Obtener usuario por id
 GET {{ProyectoAppServicios_HostAddress}}/api/usuarios/1
+Authorization: Bearer {{login.response.body.token}}
 Accept: application/json
 
 ### Registrar usuario
@@ -49,6 +51,7 @@ Content-Type: application/json
 
 ### Actualizar perfil
 PUT {{ProyectoAppServicios_HostAddress}}/api/usuarios/1
+Authorization: Bearer {{login.response.body.token}}
 Content-Type: application/json
 
 {
@@ -58,18 +61,21 @@ Content-Type: application/json
   "direccion": "San Martín 500, Firmat"
 }
 
-### Baja lógica
+### Baja lógica (administrador)
 DELETE {{ProyectoAppServicios_HostAddress}}/api/usuarios/1
+Authorization: Bearer {{login.response.body.token}}
 
 ###
 # ---------------- Profesionales ----------------
 
 ### Listar profesionales
 GET {{ProyectoAppServicios_HostAddress}}/api/profesionales
+Authorization: Bearer {{login.response.body.token}}
 Accept: application/json
 
 ### Obtener profesional por id
 GET {{ProyectoAppServicios_HostAddress}}/api/profesionales/2
+Authorization: Bearer {{login.response.body.token}}
 Accept: application/json
 
 ### Registrar profesional
@@ -90,6 +96,7 @@ Content-Type: application/json
 
 ### Actualizar datos del profesional
 PUT {{ProyectoAppServicios_HostAddress}}/api/profesionales/2
+Authorization: Bearer {{login.response.body.token}}
 Content-Type: application/json
 
 {
@@ -103,6 +110,7 @@ Content-Type: application/json
 
 ### Actualizar presentación
 PATCH {{ProyectoAppServicios_HostAddress}}/api/profesionales/2/presentacion
+Authorization: Bearer {{login.response.body.token}}
 Content-Type: application/json
 
 {
@@ -112,36 +120,45 @@ Content-Type: application/json
 
 ### Cambiar disponibilidad (true = Disponible, false = Ocupado)
 PATCH {{ProyectoAppServicios_HostAddress}}/api/profesionales/2/disponibilidad
+Authorization: Bearer {{login.response.body.token}}
 Content-Type: application/json
 
 {
   "disponible": false
 }
 
-### Baja lógica del profesional
+### Baja lógica del profesional (administrador)
 DELETE {{ProyectoAppServicios_HostAddress}}/api/profesionales/2
+Authorization: Bearer {{login.response.body.token}}
 
 ###
 # ---------------- Calificaciones ----------------
 
 ### Calificar el encargo 1 (solo el usuario solicitante, encargo finalizado)
 POST {{ProyectoAppServicios_HostAddress}}/api/encargos/1/calificacion
+Authorization: Bearer {{login.response.body.token}}
 Content-Type: application/json
 
 {
-  "idUsuario": 1,
   "puntaje": 5,
   "comentario": "Excelente trabajo, muy prolijo y puntual."
 }
 
 ### Ver la calificación del encargo 1
 GET {{ProyectoAppServicios_HostAddress}}/api/encargos/1/calificacion
+Authorization: Bearer {{login.response.body.token}}
 Accept: application/json
 
 ### Ver una calificación por id
 GET {{ProyectoAppServicios_HostAddress}}/api/calificaciones/1
+Authorization: Bearer {{login.response.body.token}}
 Accept: application/json
 
 ### Reputación de un profesional (promedio, cantidad y detalle)
 GET {{ProyectoAppServicios_HostAddress}}/api/calificaciones/profesional/2
+Authorization: Bearer {{login.response.body.token}}
 Accept: application/json
+
+### Historial de trabajos finalizados y calificaciones del profesional
+GET {{ProyectoAppServicios_HostAddress}}/api/profesionales/2/perfil
+Authorization: Bearer {{login.response.body.token}}
