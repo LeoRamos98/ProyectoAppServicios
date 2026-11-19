@@ -61,4 +61,3 @@ namespace AppServicios.Application.Interfaces
             CancellationToken cancellationToken = default);
     }
 }
-}

@@ -1,6 +1,25 @@
 @ProyectoAppServicios_HostAddress = http://localhost:5298
 
-GET {{ProyectoAppServicios_HostAddress}}/weatherforecast/
+### Calificar el encargo 1 (solo el usuario solicitante, encargo finalizado)
+POST {{ProyectoAppServicios_HostAddress}}/api/encargos/1/calificacion
+Content-Type: application/json
+
+{
+  "idUsuario": 1,
+  "puntaje": 5,
+  "comentario": "Excelente trabajo, muy prolijo y puntual."
+}
+
+### Ver la calificación del encargo 1
+GET {{ProyectoAppServicios_HostAddress}}/api/encargos/1/calificacion
+Accept: application/json
+
+### Ver una calificación por id
+GET {{ProyectoAppServicios_HostAddress}}/api/calificaciones/1
+Accept: application/json
+
+### Reputación de un profesional (promedio, cantidad y detalle)
+GET {{ProyectoAppServicios_HostAddress}}/api/calificaciones/profesional/2
 Accept: application/json
 
 ###

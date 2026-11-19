@@ -4,7 +4,7 @@ using AppServicios.Domain.Models;
 namespace AppServicios.Application.DTOs.Encargos
 {
     public record EncargoResponse(
-        int id,
+        int Id,
         int IdPropuesta,
         int IdProfesionalPropuesta,
         int IdUsuario,
@@ -22,7 +22,7 @@ namespace AppServicios.Application.DTOs.Encargos
             detalle.IdProfesional,
             detalle.Encargo.Ubicacion,
             detalle.Encargo.Estado,
-            detalle.Encargo:FechaInicioEncargo,
+            detalle.Encargo.FechaInicioEncargo,
             detalle.Encargo.FechaFinalizacionEncargo);
     }
-}
+}
