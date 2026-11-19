@@ -30,5 +30,27 @@ namespace AppServicios.Domain.Entities
             Telefono = telefono;
             Direccion = direccion;
         }
+
+        public void ActualizarPerfil(
+            string nombre,
+            string apellido,
+            string telefono,
+            string direccion)
+        {
+            Nombre = nombre;
+            Apellido = apellido;
+            Telefono = telefono;
+            Direccion = direccion;
+        }
+
+        public void Desactivar()
+        {
+            Activo = false;
+        }
+
+        public void Activar()
+        {
+            Activo = true;
+        }
     }
 }

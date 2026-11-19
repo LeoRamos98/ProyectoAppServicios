@@ -3,6 +3,9 @@ using AppServicios.Application.Services;
 using AppServicios.Domain.Interfaces;
 using AppServicios.Infrastructure.Repositories;
 using AppServicios.Infrastructure.Data;
+using AppServicios.Infrastructure.Security;
+using AppServicios.Infrastructure.ServiciosExternos;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -35,6 +38,21 @@ builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<IMensajeService, MensajeService>();
 builder.Services.AddScoped<ICalificacionService, CalificacionService>();
 
+builder.Services.AddHttpClient(nameof(GoogleMapsService), cliente =>
+{
+    cliente.BaseAddress = new Uri("https://geocode.googleapis.com/v4/geocode/");
+    cliente.Timeout = TimeSpan.FromSeconds(10);
+})
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false })
+    .AddTypedClient<IUbicacionService>(cliente =>
+        new GoogleMapsService(cliente, builder.Configuration["GoogleMaps:ApiKey"]));
+
+// Seguridad
+builder.Services.AddSingleton<IHasherContrasenia, HasherContrasenia>();
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer();
+builder.Services.AddAuthorization();
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -44,6 +62,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
