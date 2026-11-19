@@ -8,7 +8,7 @@ namespace AppServicios.Domain.Interfaces
         Task<List<EncargoDetalle>> ObtenerTodosAsync(
             CancellationToken cancellationToken = default);
 
-        Task<EncargoDetalle?> ObtenerPorIdAsynk(
+        Task<EncargoDetalle?> ObtenerPorIdAsync(
             int id,
             CancellationToken cancellationToken = default);
 
