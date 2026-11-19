@@ -10,7 +10,9 @@ namespace AppServicios.Domain.Entities
         public string TipoServicio { get; private set; }
         public string Descripcion { get; private set; }
         public string Ubicacion { get; private set; }
-        public string FotoPropuesta { get; private set; } = string.Empty;
+        public double? Latitud { get; private set; }
+        public double? Longitud { get; private set; }
+        public string FotoPropuesta { get; private set; }
 
         public DateTime FechaSolicitada { get; private set; }
 
@@ -22,13 +24,31 @@ namespace AppServicios.Domain.Entities
             string tipoServicio,
             string descripcion,
             string ubicacion,
-            DateTime fechaSolicitada)
+            DateTime fechaSolicitada,
+            string? fotoPropuesta = null)
         {
             IdUsuario = idUsuario;
             TipoServicio = tipoServicio;
             Descripcion = descripcion;
             Ubicacion = ubicacion;
             FechaSolicitada = fechaSolicitada;
+            FotoPropuesta = fotoPropuesta ?? string.Empty;
+        }
+
+        public void ConfirmarUbicacion(string ubicacion, double latitud, double longitud)
+        {
+            if (string.IsNullOrWhiteSpace(ubicacion))
+                throw new ArgumentException("La dirección es obligatoria.", nameof(ubicacion));
+
+            if (!double.IsFinite(latitud) || latitud < -90 || latitud > 90)
+                throw new ArgumentOutOfRangeException(nameof(latitud), "La latitud debe estar entre -90 y 90.");
+
+            if (!double.IsFinite(longitud) || longitud < -180 || longitud > 180)
+                throw new ArgumentOutOfRangeException(nameof(longitud), "La longitud debe estar entre -180 y 180.");
+
+            Ubicacion = ubicacion.Trim();
+            Latitud = latitud;
+            Longitud = longitud;
         }
     }
 }
