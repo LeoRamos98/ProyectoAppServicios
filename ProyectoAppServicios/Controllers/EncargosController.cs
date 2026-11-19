@@ -1,15 +1,17 @@
 ﻿using AppServicios.Application.DTOs.Encargos;
 using AppServicios.Application.Exceptions;
 using AppServicios.Application.Interfaces;
-using AppServicios.Infrastructure.Repositories;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ProyectoAppServicios.Autorizacion;
 
 namespace ProyectoAppServicios.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/encargos")]
     [Produces("application/json")]
-    public class EncargosController : ControllerBase
+    public class EncargosController : ControladorAutenticado
     {
         private readonly IEncargoService _encargoService;
 
@@ -20,6 +22,7 @@ namespace ProyectoAppServicios.Controllers
 
         // GET api/encargos
         [HttpGet]
+        [Authorize(Policy = nameof(AlcanceCuenta.Administrador))]
         [ProducesResponseType<IReadOnlyList<EncargoResponse>>(StatusCodes.Status200OK)]
         public async Task<ActionResult<IReadOnlyList<EncargoResponse>>> ObtenerTodos(
             CancellationToken cancellationToken)
@@ -36,31 +39,38 @@ namespace ProyectoAppServicios.Controllers
             int id,
             CancellationToken cancellationToken)
         {
-            var encargo = await _encargoService.ObtenerPorIdAsync(id, cancellationToken);
-            return encargo is null ? NotFound() : Ok(encargo);
+            if (!IntentarObtenerIdUsuario(out var actor)) return Challenge();
+            try
+            {
+                var encargo = await _encargoService.ObtenerPorIdAsync(id, actor, cancellationToken);
+                return encargo is null ? NotFound() : Ok(encargo);
+            }
+            catch (AccesoDenegadoException) { return Forbid(); }
         }
 
         // GET api/encargos/usuario/5  (encargos que solicitó un usuario)
-        [HttpGet("usuario/{idUsuario:int}")]
+        [HttpGet("usuario/{id:int}")]
+        [Authorize(Policy = nameof(AlcanceCuenta.TitularOAdministrador))]
         [ProducesResponseType<IReadOnlyList<EncargoResponse>>(StatusCodes.Status200OK)]
         public async Task<ActionResult<IReadOnlyList<EncargoResponse>>> ObtenerPorUsuario(
-            int idUsuario,
+            int id,
             CancellationToken cancellationToken)
         {
             var encargos = await _encargoService
-                .ObtenerPorUsuarioAsync(idUsuario, cancellationToken);
+                .ObtenerPorUsuarioAsync(id, cancellationToken);
             return Ok(encargos);
         }
 
         // GET api/encargos/profesional/5  (encargos asignados a un profesional)
-        [HttpGet("profesional/{idProfesional:int}")]
+        [HttpGet("profesional/{id:int}")]
+        [Authorize(Policy = nameof(AlcanceCuenta.TitularOAdministrador))]
         [ProducesResponseType<IReadOnlyList<EncargoResponse>>(StatusCodes.Status200OK)]
         public async Task<ActionResult<IReadOnlyList<EncargoResponse>>> ObtenerPorProfesional(
-            int idProfesional,
+            int id,
             CancellationToken cancellationToken)
         {
             var encargos = await _encargoService
-                .ObtenerPorProfesionalAsync(idProfesional, cancellationToken);
+                .ObtenerPorProfesionalAsync(id, cancellationToken);
             return Ok(encargos);
         }
 
@@ -74,14 +84,17 @@ namespace ProyectoAppServicios.Controllers
             [FromBody] CrearEncargoRequest request,
             CancellationToken cancellationToken)
         {
+            if (!IntentarObtenerIdUsuario(out var actor)) return Challenge();
             try
             {
-                var encargo = await _encargoService.CrearAsync(request, cancellationToken);
+                var encargo = await _encargoService.CrearAsync(actor, request, cancellationToken);
                 return encargo is null
                     ? NotFound()
                     : CreatedAtAction(
                         nameof(ObtenerPorId), new { id = encargo.Id }, encargo);
             }
+            catch (UnauthorizedAccessException) { return Forbid(); }
+            catch (KeyNotFoundException) { return NotFound(); }
             catch (ConflictoException ex)
             {
                 return Problem(
@@ -99,12 +112,12 @@ namespace ProyectoAppServicios.Controllers
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
         public async Task<ActionResult<EncargoResponse>> Iniciar(
             int id,
-            [FromBody] AccionEncargoRequest request,
             CancellationToken cancellationToken)
         {
+            if (!IntentarObtenerIdUsuario(out var actor)) return Challenge();
             try
             {
-                var encargo = await _encargoService.IniciarAsync(id, request, cancellationToken);
+                var encargo = await _encargoService.IniciarAsync(id, actor, cancellationToken);
                 return encargo is null ? NotFound() : Ok(encargo);
             }
             catch (AccesoDenegadoException ex)
@@ -130,12 +143,12 @@ namespace ProyectoAppServicios.Controllers
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
         public async Task<ActionResult<EncargoResponse>> Finalizar(
             int id,
-            [FromBody] AccionEncargoRequest request,
             CancellationToken cancellationToken)
         {
+            if (!IntentarObtenerIdUsuario(out var actor)) return Challenge();
             try
             {
-                var encargo = await _encargoService.FinalizarAsync(id, request, cancellationToken);
+                var encargo = await _encargoService.FinalizarAsync(id, actor, cancellationToken);
                 return encargo is null ? NotFound() : Ok(encargo);
             }
             catch (AccesoDenegadoException ex)
@@ -161,12 +174,12 @@ namespace ProyectoAppServicios.Controllers
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
         public async Task<ActionResult<EncargoResponse>> Cancelar(
             int id,
-            [FromBody] AccionEncargoRequest request,
             CancellationToken cancellationToken)
         {
+            if (!IntentarObtenerIdUsuario(out var actor)) return Challenge();
             try
             {
-                var encargo = await _encargoService.CancelarAsync(id, request, cancellationToken);
+                var encargo = await _encargoService.CancelarAsync(id, actor, cancellationToken);
                 return encargo is null ? NotFound() : Ok(encargo);
             }
             catch (AccesoDenegadoException ex)

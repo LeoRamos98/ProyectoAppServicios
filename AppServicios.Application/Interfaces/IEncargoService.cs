@@ -8,7 +8,7 @@ namespace AppServicios.Application.Interfaces
             CancellationToken cancellationToken = default);
 
         Task<EncargoResponse?> ObtenerPorIdAsync(
-            int id,
+            int id, int idActor,
             CancellationToken cancellationToken = default);
 
         Task<IReadOnlyList<EncargoResponse>> ObtenerPorUsuarioAsync(
@@ -20,11 +20,11 @@ namespace AppServicios.Application.Interfaces
             CancellationToken cancellationToken = default);
 
         /// <exception cref="Exceptions.ConflictoException">
-        /// Si el presupuesto no está aprobado por ambas partes, está cancelado,
+        /// Si el presupuesto no tiene la aprobación del cliente, está cancelado,
         /// la propuesta no está activa o ya tiene un encargo.
         /// </exception>
         Task<EncargoResponse?> CrearAsync(
-            CrearEncargoRequest request,
+            int idActor, CrearEncargoRequest request,
             CancellationToken cancellationToken = default);
 
         /// <exception cref="Exceptions.AccesoDenegadoException">
@@ -35,7 +35,7 @@ namespace AppServicios.Application.Interfaces
         /// </exception>
         Task<EncargoResponse?> IniciarAsync(
             int id,
-            AccionEncargoRequest request,
+            int idActor,
             CancellationToken cancellationToken = default);
 
         /// <exception cref="Exceptions.AccesoDenegadoException">
@@ -46,18 +46,18 @@ namespace AppServicios.Application.Interfaces
         /// </exception>
         Task<EncargoResponse?> FinalizarAsync(
             int id,
-            AccionEncargoRequest request,
+            int idActor,
             CancellationToken cancellationToken = default);
 
         /// <exception cref="Exceptions.AccesoDenegadoException">
-        /// Si quien cancela no es el usuario solicitante ni el profesional asignado.
+        /// Si quien cancela no participa del encargo y tampoco es administrador.
         /// </exception>
         /// <exception cref="Exceptions.ConflictoException">
         /// Si el encargo ya está finalizado o cancelado.
         /// </exception>
         Task<EncargoResponse?> CancelarAsync(
             int id,
-            AccionEncargoRequest request,
+            int idActor,
             CancellationToken cancellationToken = default);
     }
 }

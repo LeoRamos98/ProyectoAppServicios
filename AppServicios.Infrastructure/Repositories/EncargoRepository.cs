@@ -1,5 +1,4 @@
-﻿using AppServicios.Domain.Entities;
-using AppServicios.Domain.Interfaces;
+﻿using AppServicios.Domain.Interfaces;
 using AppServicios.Domain.Models;
 using AppServicios.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -71,41 +70,6 @@ namespace AppServicios.Infrastructure.Repositories
                     orderby e.Id
                     select new EncargoDetalle(e, p.IdUsuario, pp.IdProfesional))
                 .ToListAsync(cancellationToken);
-        }
-
-        public Task<bool> ExisteParaPropuestaAsync(
-            int idPropuesta,
-            CancellationToken cancellationToken = default)
-        {
-            return _context.Encargos
-                .AnyAsync(e => e.IdPropuesta == idPropuesta, cancellationToken);
-        }
-
-        public Task<ProfesionalPropuesta?> ObtenerPresupuestoAsync(
-            int idProfesionalPropuesta,
-            CancellationToken cancellationToken = default)
-        {
-            return _context.Presupuestos
-                .AsNoTracking()
-                .FirstOrDefaultAsync(
-                    pp => pp.Id == idProfesionalPropuesta,
-                    cancellationToken);
-        }
-
-        public Task<Propuesta?> ObtenerPropuestaAsync(
-            int idPropuesta,
-            CancellationToken cancellationToken = default)
-        {
-            return _context.Propuestas
-                .AsNoTracking()
-                .FirstOrDefaultAsync(p => p.Id == idPropuesta, cancellationToken);
-        }
-
-        public async Task AgregarAsync(
-            Encargo encargo,
-            CancellationToken cancellationToken = default)
-        {
-            await _context.Encargos.AddAsync(encargo, cancellationToken);
         }
 
         public Task GuardarCambiosAsync(

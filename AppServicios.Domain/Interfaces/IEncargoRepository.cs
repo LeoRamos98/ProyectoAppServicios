@@ -1,5 +1,4 @@
-﻿using AppServicios.Domain.Entities;
-using AppServicios.Domain.Models;
+﻿using AppServicios.Domain.Models;
 
 namespace AppServicios.Domain.Interfaces
 {
@@ -18,28 +17,6 @@ namespace AppServicios.Domain.Interfaces
 
         Task<List<EncargoDetalle>> ObtenerPorProfesionalAsync(
             int idProfesional,
-            CancellationToken cancellationToken = default);
-
-        Task<bool> ExisteParaPropuestaAsync(
-            int idPropuesta,
-            CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Lectura del presupuesto a partir del cual se genera el encargo.
-        /// </summary>
-        Task<ProfesionalPropuesta?> ObtenerPresupuestoAsync(
-            int idProfesionalPropuesta,
-            CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Lectura de la propuesta a la que pertenece el presupuesto.
-        /// </summary>
-        Task<Propuesta?> ObtenerPropuestaAsync(
-            int idPropuesta,
-            CancellationToken cancellationToken = default);
-
-        Task AgregarAsync(
-            Encargo encargo,
             CancellationToken cancellationToken = default);
 
         Task GuardarCambiosAsync(

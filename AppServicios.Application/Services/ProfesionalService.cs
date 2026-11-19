@@ -12,15 +12,21 @@ namespace AppServicios.Application.Services
         private readonly IProfesionalRepository _profesionalRepository;
         private readonly IUsuarioRepository _usuarioRepository;
         private readonly IHasherContrasenia _hasherContrasenia;
+        private readonly IProfesionalPropuestaRepository _presupuestos;
+        private readonly IUnidadDeTrabajo _unidadDeTrabajo;
 
         public ProfesionalService(
             IProfesionalRepository profesionalRepository,
             IUsuarioRepository usuarioRepository,
-            IHasherContrasenia hasherContrasenia)
+            IHasherContrasenia hasherContrasenia,
+            IProfesionalPropuestaRepository presupuestos,
+            IUnidadDeTrabajo unidadDeTrabajo)
         {
             _profesionalRepository = profesionalRepository;
             _usuarioRepository = usuarioRepository;
             _hasherContrasenia = hasherContrasenia;
+            _presupuestos = presupuestos;
+            _unidadDeTrabajo = unidadDeTrabajo;
         }
 
         public async Task<IReadOnlyList<ProfesionalResponse>> ObtenerTodosAsync(
@@ -42,6 +48,19 @@ namespace AppServicios.Application.Services
             return profesional is null
                 ? null
                 : ProfesionalResponse.DesdeEntidad(profesional);
+        }
+
+        public async Task<PerfilProfesionalResponse?> ObtenerPerfilAsync(
+            int id, CancellationToken cancellationToken = default)
+        {
+            var profesional = await ObtenerPorIdAsync(id, cancellationToken);
+            if (profesional is null)
+                return null;
+
+            var trabajos = await _profesionalRepository.ObtenerTrabajosFinalizadosAsync(id, cancellationToken);
+            var puntajes = trabajos.Where(t => t.Puntaje.HasValue).Select(t => t.Puntaje!.Value).ToList();
+            return new PerfilProfesionalResponse(profesional, trabajos,
+                puntajes.Count == 0 ? null : Math.Round(puntajes.Average(), 2), puntajes.Count);
         }
 
         public async Task<ProfesionalResponse> CrearAsync(
@@ -131,29 +150,24 @@ namespace AppServicios.Application.Services
             return ProfesionalResponse.DesdeEntidad(profesional);
         }
 
-        public async Task<ProfesionalResponse?> CambiarDisponibilidadAsync(
-            int id,
-            CambiarDisponibilidadRequest request,
-            CancellationToken cancellationToken = default)
+        public Task<ProfesionalResponse?> CambiarDisponibilidadAsync(
+            int id, CambiarDisponibilidadRequest request, CancellationToken cancellationToken = default)
         {
-            var profesional = await _profesionalRepository
-                .ObtenerPorIdAsync(id, cancellationToken);
-
-            if (profesional is null)
+            return _unidadDeTrabajo.EjecutarAsync<ProfesionalResponse?>(async () =>
             {
-                return null;
-            }
+                var profesional = await _profesionalRepository.ObtenerPorIdAsync(id, cancellationToken);
+                if (profesional is null)
+                    return null;
+                if (!profesional.Activo || profesional.Estado == EstadoProfesionalEnum.DadoDeBaja)
+                    throw new ConflictoException("Un profesional dado de baja no puede cambiar su disponibilidad.");
 
-            if (profesional.Estado == EstadoProfesionalEnum.DadoDeBaja)
-            {
-                throw new ConflictoException(
-                    "Un profesional dado de baja no puede cambiar su disponibilidad.");
-            }
+                bool disponible = request.Disponible!.Value;
+                if (disponible && await _presupuestos.TieneEncargoActivoAsync(id, cancellationToken))
+                    throw new ConflictoException("El profesional tiene un encargo activo.");
 
-            profesional.CambiarDisponibilidad(request.Disponible!.Value);
-            await _profesionalRepository.GuardarCambiosAsync(cancellationToken);
-
-            return ProfesionalResponse.DesdeEntidad(profesional);
+                profesional.CambiarDisponibilidad(disponible);
+                return ProfesionalResponse.DesdeEntidad(profesional);
+            }, cancellationToken);
         }
 
         public async Task<bool> DarDeBajaAsync(

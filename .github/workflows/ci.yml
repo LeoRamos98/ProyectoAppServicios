@@ -72,12 +72,21 @@ jobs:
             if (!$lector.Read()) { throw 'El script SQL no devolvió los identificadores de ensayo.' }
             "ID_CLIENTE_CI=$($lector['IdCliente'])" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
             "ID_PROFESIONAL_CI=$($lector['IdProfesional'])" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+            $lector.Close()
+
+            # Cuenta exclusiva de LocalDB en este runner. Se autentica con un JWT de desarrollo.
+            $consulta.CommandText = @'
+          INSERT INTO Usuarios (Nombre, Apellido, Direccion, Email, Contrasenia, Telefono, Rol, Activo)
+          OUTPUT INSERTED.Id
+          VALUES ('Administrador', 'CI', '', CONCAT(NEWID(), '@example.test'), '!', '', 2, 1);
+          '@
+            "ID_ADMIN_CI=$($consulta.ExecuteScalar())" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
           } finally {
             $conexion.Dispose()
           }
 
-      - name: Probar login, propuestas y presupuestos por HTTP
-        run: ./.github/scripts/probar-api.ps1 -IdUsuario $env:ID_CLIENTE_CI -IdProfesional $env:ID_PROFESIONAL_CI
+      - name: Probar permisos y el circuito completo por HTTP
+        run: ./.github/scripts/probar-api.ps1 -IdUsuario $env:ID_CLIENTE_CI -IdProfesional $env:ID_PROFESIONAL_CI -IdAdministrador $env:ID_ADMIN_CI
 
       - name: Guardar la API compilada
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6

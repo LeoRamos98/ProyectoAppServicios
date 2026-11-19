@@ -33,7 +33,7 @@ namespace AppServicios.Application.Interfaces
         /// </exception>
         Task<CalificacionResponse?> CalificarEncargoAsync(
             int idEncargo,
-            CrearCalificacionRequest request,
+            int idUsuarioAutenticado, CrearCalificacionRequest request,
             CancellationToken cancellationToken = default);
     }
 }

@@ -1,4 +1,5 @@
 ﻿using AppServicios.Domain.Entities;
+using AppServicios.Domain.Models;
 
 namespace AppServicios.Domain.Interfaces
 {
@@ -10,6 +11,9 @@ namespace AppServicios.Domain.Interfaces
         Task<Profesional?> ObtenerPorIdAsync(
             int id,
             CancellationToken cancellationToken = default);
+
+        Task<List<TrabajoFinalizado>> ObtenerTrabajosFinalizadosAsync(
+            int idProfesional, CancellationToken cancellationToken = default);
 
         Task<bool> ExisteMatriculaAsync(
             string nroMatricula,

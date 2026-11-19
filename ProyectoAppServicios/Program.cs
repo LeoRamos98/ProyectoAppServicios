@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using ProyectoAppServicios.Autorizacion;
 using AppServicios.Application.Interfaces;
 using AppServicios.Application.Services;
 using AppServicios.Domain.Interfaces;
@@ -92,8 +93,15 @@ if (builder.Environment.IsDevelopment())
     autenticacion.AddJwtBearer(JwtBearerDefaults.AuthenticationScheme);
     politica.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme);
 }
+var autenticada = politica.RequireAuthenticatedUser().Build();
+AuthorizationPolicy Requerir(AlcanceCuenta alcance) =>
+    new AuthorizationPolicyBuilder(autenticada).AddRequirements(new PermisoCuenta(alcance)).Build();
+
 builder.Services.AddAuthorizationBuilder()
-    .SetDefaultPolicy(politica.RequireAuthenticatedUser().Build());
+    .SetDefaultPolicy(Requerir(AlcanceCuenta.Activa))
+    .AddPolicy(nameof(AlcanceCuenta.Administrador), Requerir(AlcanceCuenta.Administrador))
+    .AddPolicy(nameof(AlcanceCuenta.TitularOAdministrador), Requerir(AlcanceCuenta.TitularOAdministrador));
+builder.Services.AddScoped<IAuthorizationHandler, AutorizacionCuenta>();
 
 var app = builder.Build();
 

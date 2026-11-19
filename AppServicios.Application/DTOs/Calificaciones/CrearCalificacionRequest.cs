@@ -8,11 +8,6 @@ namespace AppServicios.Application.DTOs.Calificaciones
     /// </summary>
     public class CrearCalificacionRequest
     {
-        // Temporal: cuando exista autenticación, este id se obtiene del
-        // token y deja de viajar en el cuerpo de la solicitud.
-        [Range(1, int.MaxValue)]
-        public int IdUsuario { get; set; }
-
         [Range(1, 5, ErrorMessage = "El puntaje debe estar entre 1 y 5.")]
         public int Puntaje { get; set; }
 

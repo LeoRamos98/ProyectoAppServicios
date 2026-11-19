@@ -4,7 +4,6 @@ using AppServicios.Application.Interfaces;
 using AppServicios.Domain.Entities;
 using AppServicios.Domain.Enums;
 using AppServicios.Domain.Interfaces;
-using AppServicios.Domain.Models;
 
 namespace AppServicios.Application.Services
 {
@@ -14,17 +13,20 @@ namespace AppServicios.Application.Services
         private readonly IProfesionalPropuestaRepository _presupuestos;
         private readonly IUsuarioRepository _usuarios;
         private readonly IUnidadDeTrabajo _unidadDeTrabajo;
+        private readonly IProfesionalPropuestaService _acuerdos;
 
         public EncargoService(
             IEncargoRepository encargoRepository,
             IProfesionalPropuestaRepository presupuestos,
             IUsuarioRepository usuarios,
-            IUnidadDeTrabajo unidadDeTrabajo)
+            IUnidadDeTrabajo unidadDeTrabajo,
+            IProfesionalPropuestaService acuerdos)
         {
             _encargoRepository = encargoRepository;
             _presupuestos = presupuestos;
             _usuarios = usuarios;
             _unidadDeTrabajo = unidadDeTrabajo;
+            _acuerdos = acuerdos;
         }
 
         public async Task<IReadOnlyList<EncargoResponse>> ObtenerTodosAsync(
@@ -37,13 +39,19 @@ namespace AppServicios.Application.Services
         }
 
         public async Task<EncargoResponse?> ObtenerPorIdAsync(
-            int id,
+            int id, int idActor,
             CancellationToken cancellationToken = default)
         {
             var encargo = await _encargoRepository
                 .ObtenerPorIdAsync(id, cancellationToken);
 
-            return encargo is null ? null : EncargoResponse.DesdeDetalle(encargo);
+            if (encargo is null)
+                return null;
+            if (idActor != encargo.IdUsuario && idActor != encargo.IdProfesional &&
+                !await EsAdministradorAsync(idActor, cancellationToken))
+                throw new AccesoDenegadoException("Solo los participantes o un administrador pueden consultar el encargo.");
+
+            return EncargoResponse.DesdeDetalle(encargo);
         }
 
         public async Task<IReadOnlyList<EncargoResponse>> ObtenerPorUsuarioAsync(
@@ -67,74 +75,24 @@ namespace AppServicios.Application.Services
         }
 
         public async Task<EncargoResponse?> CrearAsync(
-            CrearEncargoRequest request,
+            int idActor, CrearEncargoRequest request,
             CancellationToken cancellationToken = default)
         {
-            var presupuesto = await _encargoRepository.ObtenerPresupuestoAsync(
-                request.IdProfesionalPropuesta, cancellationToken);
-
-            if (presupuesto is null)
-            {
-                return null;
-            }
-
-            if (presupuesto.Estado == EstadoPresupuestoEnum.Cancelado)
-            {
-                throw new ConflictoException(
-                    "El presupuesto está cancelado y no puede originar un encargo.");
-            }
-
-            if (!presupuesto.AprobadoUsuario || !presupuesto.AprobadoProfesional)
-            {
-                throw new ConflictoException(
-                    "El presupuesto debe estar aprobado por el usuario y por el " +
-                    "profesional para generar el encargo.");
-            }
-
-            var propuesta = await _encargoRepository.ObtenerPropuestaAsync(
-                presupuesto.IdPropuesta, cancellationToken);
-
-            if (propuesta is null)
-            {
-                throw new ConflictoException(
-                    "La propuesta asociada al presupuesto no existe.");
-            }
-
-            if (propuesta.Estado != EstadoPropuestaEnum.Activa)
-            {
-                throw new ConflictoException(
-                    "La propuesta no está activa y no puede originar un encargo.");
-            }
-
-            if (await _encargoRepository.ExisteParaPropuestaAsync(
-                    propuesta.Id, cancellationToken))
-            {
-                throw new ConflictoException(
-                    "La propuesta ya tiene un encargo generado.");
-            }
-
-            var encargo = new Encargo(
-                propuesta.Id,
-                presupuesto.Id,
-                propuesta.Ubicacion);
-
-            await _encargoRepository.AgregarAsync(encargo, cancellationToken);
-            await _encargoRepository.GuardarCambiosAsync(cancellationToken);
-
-            return EncargoResponse.DesdeDetalle(new EncargoDetalle(
-                encargo,
-                propuesta.IdUsuario,
-                presupuesto.IdProfesional));
+            // La ruta de encargos confirma la misma oferta y reutiliza la transacción de presupuestos.
+            var acuerdo = await _acuerdos.ConfirmarAsync(idActor, request.IdProfesionalPropuesta, cancellationToken);
+            if (!acuerdo.EncargoCreado)
+                throw new ConflictoException("El presupuesto ya tiene un encargo generado.");
+            return await ObtenerPorIdAsync(acuerdo.IdEncargo, idActor, cancellationToken);
         }
 
         public Task<EncargoResponse?> IniciarAsync(
             int id,
-            AccionEncargoRequest request,
+            int idActor,
             CancellationToken cancellationToken = default)
         {
             return CambiarEstadoAsync(
                 id,
-                request.IdUsuario,
+                idActor,
                 soloProfesionalAsignado: true,
                 mensajeSinPermiso:
                     "Solo el profesional asignado puede iniciar el encargo.",
@@ -144,12 +102,12 @@ namespace AppServicios.Application.Services
 
         public Task<EncargoResponse?> FinalizarAsync(
             int id,
-            AccionEncargoRequest request,
+            int idActor,
             CancellationToken cancellationToken = default)
         {
             return CambiarEstadoAsync(
                 id,
-                request.IdUsuario,
+                idActor,
                 soloProfesionalAsignado: true,
                 mensajeSinPermiso:
                     "Solo el profesional asignado puede finalizar el encargo.",
@@ -159,16 +117,15 @@ namespace AppServicios.Application.Services
 
         public Task<EncargoResponse?> CancelarAsync(
             int id,
-            AccionEncargoRequest request,
+            int idActor,
             CancellationToken cancellationToken = default)
         {
             return CambiarEstadoAsync(
                 id,
-                request.IdUsuario,
+                idActor,
                 soloProfesionalAsignado: false,
                 mensajeSinPermiso:
-                    "Solo el usuario solicitante o el profesional asignado " +
-                    "pueden cancelar el encargo.",
+                    "Solo los participantes o un administrador pueden cancelar el encargo.",
                 transicion: encargo => encargo.Cancelar(),
                 cancellationToken);
         }
@@ -195,10 +152,9 @@ namespace AppServicios.Application.Services
                     return null;
                 }
 
-                var tienePermiso = soloProfesionalAsignado
-                    ? idUsuario == detalle.IdProfesional
-                    : idUsuario == detalle.IdProfesional
-                        || idUsuario == detalle.IdUsuario;
+                var tienePermiso = idUsuario == detalle.IdProfesional ||
+                    (!soloProfesionalAsignado && (idUsuario == detalle.IdUsuario ||
+                        await EsAdministradorAsync(idUsuario, cancellationToken)));
 
                 if (!tienePermiso)
                 {
@@ -224,6 +180,9 @@ namespace AppServicios.Application.Services
                 return EncargoResponse.DesdeDetalle(detalle);
             }, cancellationToken);
         }
+
+        private async Task<bool> EsAdministradorAsync(int id, CancellationToken cancellationToken) =>
+            await _usuarios.ObtenerRolActivoAsync(id, cancellationToken) == RolEnum.Admin;
 
         private async Task LiberarProfesionalSiCorrespondeAsync(
             int idProfesional, CancellationToken cancellationToken)

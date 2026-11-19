@@ -11,6 +11,9 @@ namespace AppServicios.Application.Interfaces
             int id,
             CancellationToken cancellationToken = default);
 
+        Task<PerfilProfesionalResponse?> ObtenerPerfilAsync(
+            int id, CancellationToken cancellationToken = default);
+
         /// <exception cref="Exceptions.ConflictoException">
         /// Si el email o el número de matrícula ya están registrados.
         /// </exception>

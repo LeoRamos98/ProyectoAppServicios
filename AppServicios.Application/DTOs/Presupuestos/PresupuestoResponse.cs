@@ -12,4 +12,7 @@ public record PresupuestoResponse(
             p.FechaPresupuesto, p.Estado, p.AprobadoUsuario, p.AprobadoProfesional);
 }
 
-public record ConfirmacionPresupuestoResponse(PresupuestoResponse Presupuesto, int IdEncargo);
+public record ConfirmacionPresupuestoResponse(PresupuestoResponse Presupuesto, int IdEncargo)
+{
+    internal bool EncargoCreado { get; init; }
+}

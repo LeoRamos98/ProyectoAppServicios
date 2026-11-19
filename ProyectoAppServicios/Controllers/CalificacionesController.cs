@@ -1,14 +1,16 @@
 ﻿using AppServicios.Application.DTOs.Calificaciones;
 using AppServicios.Application.Exceptions;
 using AppServicios.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ProyectoAppServicios.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/calificaciones")]
     [Produces("application/json")]
-    public class CalificacionesController : ControllerBase
+    public class CalificacionesController : ControladorAutenticado
     {
         private readonly ICalificacionService _calificacionService;
 
@@ -69,10 +71,11 @@ namespace ProyectoAppServicios.Controllers
             [FromBody] CrearCalificacionRequest request,
             CancellationToken cancellationToken)
         {
+            if (!IntentarObtenerIdUsuario(out var actor)) return Challenge();
             try
             {
                 var calificacion = await _calificacionService
-                    .CalificarEncargoAsync(idEncargo, request, cancellationToken);
+                    .CalificarEncargoAsync(idEncargo, actor, request, cancellationToken);
 
                 return calificacion is null
                     ? NotFound()

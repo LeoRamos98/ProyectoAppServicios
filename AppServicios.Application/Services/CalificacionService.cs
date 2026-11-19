@@ -11,13 +11,16 @@ namespace AppServicios.Application.Services
     {
         private readonly ICalificacionRepository _calificacionRepository;
         private readonly IEncargoRepository _encargoRepository;
+        private readonly IUnidadDeTrabajo _unidadDeTrabajo;
 
         public CalificacionService(
             ICalificacionRepository calificacionRepository,
-            IEncargoRepository encargoRepository)
+            IEncargoRepository encargoRepository,
+            IUnidadDeTrabajo unidadDeTrabajo)
         {
             _calificacionRepository = calificacionRepository;
             _encargoRepository = encargoRepository;
+            _unidadDeTrabajo = unidadDeTrabajo;
         }
 
         public async Task<CalificacionResponse?> ObtenerPorIdAsync(
@@ -69,57 +72,36 @@ namespace AppServicios.Application.Services
 
         public async Task<CalificacionResponse?> CalificarEncargoAsync(
             int idEncargo,
-            CrearCalificacionRequest request,
+            int idUsuarioAutenticado, CrearCalificacionRequest request,
             CancellationToken cancellationToken = default)
         {
-            var detalle = await _encargoRepository
-                .ObtenerPorIdAsync(idEncargo, cancellationToken);
-
-            if (detalle is null)
+            var nueva = await _unidadDeTrabajo.EjecutarAsync<Calificacion?>(async () =>
             {
-                return null;
-            }
+                var detalle = await _encargoRepository.ObtenerPorIdAsync(idEncargo, cancellationToken);
+                if (detalle is null)
+                    return null;
+                if (idUsuarioAutenticado != detalle.IdUsuario)
+                    throw new AccesoDenegadoException("Solo el usuario que solicitó el encargo puede calificarlo.");
+                if (detalle.Encargo.Estado != EstadoEncargoEnum.Finalizado)
+                    throw new ConflictoException("Solo se puede calificar un encargo finalizado.");
+                if (await _calificacionRepository.ExisteParaEncargoAsync(idEncargo, cancellationToken))
+                    throw new ConflictoException("El encargo ya fue calificado.");
 
-            // Solo califica el usuario que solicitó el servicio (dueño de la propuesta).
-            if (request.IdUsuario != detalle.IdUsuario)
-            {
-                throw new AccesoDenegadoException(
-                    "Solo el usuario que solicitó el encargo puede calificarlo.");
-            }
+                Calificacion calificacion;
+                try
+                {
+                    calificacion = new Calificacion(idEncargo, detalle.IdProfesional, detalle.IdUsuario,
+                        request.Puntaje, request.Comentario);
+                }
+                catch (ArgumentException ex)
+                {
+                    throw new ConflictoException(ex.Message);
+                }
+                await _calificacionRepository.AgregarAsync(calificacion, cancellationToken);
+                return calificacion;
+            }, cancellationToken);
 
-            if (detalle.Encargo.Estado != EstadoEncargoEnum.Finalizado)
-            {
-                throw new ConflictoException(
-                    "Solo se puede calificar un encargo finalizado.");
-            }
-
-            if (await _calificacionRepository
-                    .ExisteParaEncargoAsync(idEncargo, cancellationToken))
-            {
-                throw new ConflictoException(
-                    "El encargo ya fue calificado.");
-            }
-
-            Calificacion calificacion;
-            try
-            {
-                calificacion = new Calificacion(
-                    idEncargo,
-                    detalle.IdProfesional,
-                    detalle.IdUsuario,
-                    request.Puntaje,
-                    request.Comentario);
-            }
-            catch (ArgumentException ex)
-            {
-                // ArgumentOutOfRangeException también entra acá.
-                throw new ConflictoException(ex.Message);
-            }
-
-            await _calificacionRepository.AgregarAsync(calificacion, cancellationToken);
-            await _calificacionRepository.GuardarCambiosAsync(cancellationToken);
-
-            return CalificacionResponse.DesdeEntidad(calificacion);
+            return nueva is null ? null : CalificacionResponse.DesdeEntidad(nueva);
         }
     }
 }
