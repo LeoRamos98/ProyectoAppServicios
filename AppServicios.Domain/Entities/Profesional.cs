@@ -16,6 +16,14 @@ namespace AppServicios.Domain.Entities
 
         public void OcuparPorEncargo() => Estado = EstadoProfesionalEnum.Ocupado;
 
+        public void LiberarPorEncargo()
+        {
+            if (Activo && Estado == EstadoProfesionalEnum.Ocupado)
+            {
+                Estado = EstadoProfesionalEnum.Disponible;
+            }
+        }
+
         public Profesional(
             string nombre,
             string apellido,

@@ -11,10 +11,20 @@ namespace AppServicios.Application.Services
     public class EncargoService : IEncargoService
     {
         private readonly IEncargoRepository _encargoRepository;
+        private readonly IProfesionalPropuestaRepository _presupuestos;
+        private readonly IUsuarioRepository _usuarios;
+        private readonly IUnidadDeTrabajo _unidadDeTrabajo;
 
-        public EncargoService(IEncargoRepository encargoRepository)
+        public EncargoService(
+            IEncargoRepository encargoRepository,
+            IProfesionalPropuestaRepository presupuestos,
+            IUsuarioRepository usuarios,
+            IUnidadDeTrabajo unidadDeTrabajo)
         {
             _encargoRepository = encargoRepository;
+            _presupuestos = presupuestos;
+            _usuarios = usuarios;
+            _unidadDeTrabajo = unidadDeTrabajo;
         }
 
         public async Task<IReadOnlyList<EncargoResponse>> ObtenerTodosAsync(
@@ -167,7 +177,7 @@ namespace AppServicios.Application.Services
         /// Flujo común de iniciar, finalizar y cancelar: busca el encargo,
         /// valida quién lo pide, aplica la transición y guarda.
         /// </summary>
-        private async Task<EncargoResponse?> CambiarEstadoAsync(
+        private Task<EncargoResponse?> CambiarEstadoAsync(
             int id,
             int idUsuario,
             bool soloProfesionalAsignado,
@@ -175,36 +185,61 @@ namespace AppServicios.Application.Services
             Action<Encargo> transicion,
             CancellationToken cancellationToken)
         {
-            var detalle = await _encargoRepository
-                .ObtenerPorIdAsync(id, cancellationToken);
-
-            if (detalle is null)
+            return _unidadDeTrabajo.EjecutarAsync<EncargoResponse?>(async () =>
             {
-                return null;
+                var detalle = await _encargoRepository
+                    .ObtenerPorIdAsync(id, cancellationToken);
+
+                if (detalle is null)
+                {
+                    return null;
+                }
+
+                var tienePermiso = soloProfesionalAsignado
+                    ? idUsuario == detalle.IdProfesional
+                    : idUsuario == detalle.IdProfesional
+                        || idUsuario == detalle.IdUsuario;
+
+                if (!tienePermiso)
+                {
+                    throw new AccesoDenegadoException(mensajeSinPermiso);
+                }
+
+                try
+                {
+                    transicion(detalle.Encargo);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    throw new ConflictoException(ex.Message);
+                }
+
+                if (detalle.Encargo.Estado is EstadoEncargoEnum.Finalizado or EstadoEncargoEnum.Cancelado)
+                {
+                    // La consulta de encargos activos debe ver este cierre dentro de la misma transacción.
+                    await _encargoRepository.GuardarCambiosAsync(cancellationToken);
+                    await LiberarProfesionalSiCorrespondeAsync(detalle.IdProfesional, cancellationToken);
+                }
+
+                return EncargoResponse.DesdeDetalle(detalle);
+            }, cancellationToken);
+        }
+
+        private async Task LiberarProfesionalSiCorrespondeAsync(
+            int idProfesional, CancellationToken cancellationToken)
+        {
+            if (await _presupuestos.TieneEncargoActivoAsync(idProfesional, cancellationToken))
+            {
+                return;
             }
 
-            var tienePermiso = soloProfesionalAsignado
-                ? idUsuario == detalle.IdProfesional
-                : idUsuario == detalle.IdProfesional
-                    || idUsuario == detalle.IdUsuario;
-
-            if (!tienePermiso)
+            var usuario = await _usuarios.ObtenerPorIdAsync(idProfesional, cancellationToken);
+            if (usuario is not Profesional profesional)
             {
-                throw new AccesoDenegadoException(mensajeSinPermiso);
+                throw new ConflictoException("No se encontró el profesional asignado al encargo.");
             }
 
-            try
-            {
-                transicion(detalle.Encargo);
-            }
-            catch (InvalidOperationException ex)
-            {
-                throw new ConflictoException(ex.Message);
-            }
-
-            await _encargoRepository.GuardarCambiosAsync(cancellationToken);
-
-            return EncargoResponse.DesdeDetalle(detalle);
+            profesional.LiberarPorEncargo();
         }
     }
 }
