@@ -27,6 +27,17 @@ namespace AppServicios.Infrastructure.Repositories
         {
             return _context.SaveChangesAsync(cancellationToken);
         }
+
+        public Task<List<Propuesta>> ObtenerPorUsuarioAsync(
+             int idUsuario,
+            CancellationToken cancellationToken = default)
+            {
+                return _context.Propuestas
+                    .AsNoTracking()
+                    .Where(propuesta => propuesta.IdUsuario == idUsuario)
+                    .OrderBy(propuesta => propuesta.Id)
+                    .ToListAsync(cancellationToken);
+            }
         public Task<List<Propuesta>> ObtenerActivasAsync(
             CancellationToken cancellationToken = default)
             {

@@ -42,6 +42,28 @@ namespace ProyectoAppServicios.Controllers
 
             return StatusCode(StatusCodes.Status201Created, propuesta);
         }
+        [HttpGet("mias")]
+        [ProducesResponseType<IReadOnlyList<PropuestaResponse>>(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<ActionResult<IReadOnlyList<PropuestaResponse>>> ObtenerMias(
+        CancellationToken cancellationToken)
+            {
+                if (!IntentarObtenerIdUsuario(out var idUsuario))
+                {
+                    return Challenge();
+                }
+
+                var propuestas = await _propuestaService.ObtenerMiasAsync(
+                    idUsuario, cancellationToken);
+
+                if (propuestas is null)
+                {
+                    return Forbid();
+                }
+
+                return Ok(propuestas);
+            }
 
         [HttpGet("activas")]
         [ProducesResponseType<IReadOnlyList<PropuestaResponse>>(StatusCodes.Status200OK)]

@@ -57,6 +57,24 @@ namespace AppServicios.Application.Services
             return PropuestaResponse.DesdeEntidad(propuesta);
         }
 
+        public async Task<IReadOnlyList<PropuestaResponse>?> ObtenerMiasAsync(
+            int idUsuarioAutenticado,
+            CancellationToken cancellationToken = default)
+        {
+            var usuario = await _usuarioRepository.ObtenerPorIdAsync(
+                idUsuarioAutenticado, cancellationToken);
+
+            if (usuario is null || !usuario.Activo)
+            {
+                return null;
+            }
+
+            var propuestas = await _propuestaRepository.ObtenerPorUsuarioAsync(
+                usuario.Id, cancellationToken);
+
+            return propuestas.Select(PropuestaResponse.DesdeEntidad).ToList();
+        }
+
         public async Task<IReadOnlyList<PropuestaResponse>?> ObtenerActivasAsync(
             int idUsuarioAutenticado,
             CancellationToken cancellationToken = default)
